@@ -3,7 +3,7 @@ import React from 'react';
 import { useUserData } from '../hooks/useUserData';
 import { AppView } from '../types';
 import { HIRAGANA_DATA, KATAKANA_DATA, KANJI_DATA, ACHIEVEMENTS } from '../constants';
-import { BookOpenIcon, StarIcon, TrophyIcon, LanguageIcon } from './icons';
+import { BookOpenIcon, StarIcon, TrophyIcon, LanguageIcon, LockIcon } from './icons';
 import { BarChart, Bar, XAxis, YAxis, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 
 interface DashboardProps {
@@ -23,6 +23,35 @@ const Dashboard: React.FC<DashboardProps> = ({ setView }) => {
         name: new Date(d.date).toLocaleDateString(undefined, { weekday: 'short' }),
         xp: d.xp,
     }));
+    
+    // Progress towards unlocks
+    const hiraganaMasteryPercent = (hiraganaLearned / HIRAGANA_DATA.length);
+    const katakanaMasteryPercent = (katakanaLearned / KATAKANA_DATA.length);
+    const kanjiMasteryPercent = (kanjiLearned / KANJI_DATA.length);
+
+    // Words unlock: 100% Hira, 100% Kata, 20% Kanji
+    const WORDS_UNLOCK_REQ = { h: 1.0, k: 1.0, j: 0.2 };
+    const wordsProgress = Math.min(
+        (
+            (Math.min(hiraganaMasteryPercent / WORDS_UNLOCK_REQ.h, 1.0) * 0.45) +
+            (Math.min(katakanaMasteryPercent / WORDS_UNLOCK_REQ.k, 1.0) * 0.45) +
+            (Math.min(kanjiMasteryPercent / WORDS_UNLOCK_REQ.j, 1.0) * 0.10)
+        ) * 100,
+        100
+    );
+    const isWordsLocked = wordsProgress < 100;
+
+    // Sentences unlock: 100% Hira, 100% Kata, 50% Kanji
+    const SENTENCES_UNLOCK_REQ = { h: 1.0, k: 1.0, j: 0.5 };
+    const sentencesProgress = Math.min(
+        (
+            (Math.min(hiraganaMasteryPercent / SENTENCES_UNLOCK_REQ.h, 1.0) * 0.35) +
+            (Math.min(katakanaMasteryPercent / SENTENCES_UNLOCK_REQ.k, 1.0) * 0.35) +
+            (Math.min(kanjiMasteryPercent / SENTENCES_UNLOCK_REQ.j, 1.0) * 0.30)
+        ) * 100,
+        100
+    );
+    const isSentencesLocked = sentencesProgress < 100;
 
     return (
         <div className="space-y-8">
@@ -41,8 +70,20 @@ const Dashboard: React.FC<DashboardProps> = ({ setView }) => {
                 <ModuleCard title="Learn Hiragana" description="Start with the basic Japanese phonetic script." onClick={() => setView(AppView.Hiragana)} />
                 <ModuleCard title="Learn Katakana" description="Learn the script for foreign words and emphasis." onClick={() => setView(AppView.Katakana)} />
                 <ModuleCard title="Learn Kanji" description="Begin your journey into Chinese characters." onClick={() => setView(AppView.Kanji)} />
-                <ModuleCard title="Word Builder" description="Form words with the characters you've learned." onClick={() => setView(AppView.Words)} />
-                <ModuleCard title="Sentence Practice" description="Read and understand Japanese sentences." onClick={() => setView(AppView.Sentences)} />
+                <ModuleCard 
+                    title="Word Builder" 
+                    description="Form words with the characters you've learned." 
+                    onClick={() => !isWordsLocked && setView(AppView.Words)}
+                    isLocked={isWordsLocked}
+                    progress={wordsProgress}
+                />
+                <ModuleCard 
+                    title="Sentence Practice" 
+                    description="Read and understand Japanese sentences." 
+                    onClick={() => !isSentencesLocked && setView(AppView.Sentences)} 
+                    isLocked={isSentencesLocked}
+                    progress={sentencesProgress}
+                />
             </div>
             
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
@@ -94,12 +135,40 @@ const StatCard: React.FC<{ title: string; value: string; icon: React.ReactNode }
     </div>
 );
 
-const ModuleCard: React.FC<{ title: string; description: string; onClick: () => void; }> = ({ title, description, onClick }) => (
-    <div className="bg-white dark:bg-slate-800 p-6 rounded-xl shadow-lg hover:shadow-xl hover:scale-105 transition-transform duration-200 cursor-pointer" onClick={onClick}>
-        <h3 className="text-lg font-semibold text-indigo-600 dark:text-indigo-400 mb-2">{title}</h3>
-        <p className="text-slate-600 dark:text-slate-400">{description}</p>
-    </div>
-);
+const ModuleCard: React.FC<{
+    title: string;
+    description: string;
+    onClick: () => void;
+    isLocked?: boolean;
+    progress?: number;
+}> = ({ title, description, onClick, isLocked = false, progress = 0 }) => {
+    const lockedClasses = "opacity-70 cursor-not-allowed";
+    const unlockedClasses = "hover:shadow-xl hover:scale-105 transition-transform duration-200 cursor-pointer";
+
+    return (
+        <div
+            className={`bg-white dark:bg-slate-800 p-6 rounded-xl shadow-lg relative overflow-hidden ${isLocked ? lockedClasses : unlockedClasses}`}
+            onClick={isLocked ? undefined : onClick}
+        >
+            <h3 className={`text-lg font-semibold mb-2 ${isLocked ? 'text-slate-500 dark:text-slate-400' : 'text-indigo-600 dark:text-indigo-400'}`}>{title}</h3>
+            <p className="text-slate-600 dark:text-slate-400 text-sm">{description}</p>
+            {isLocked && (
+                <div className="mt-4">
+                    <div className="flex justify-between items-center mb-1">
+                        <span className="text-xs font-semibold text-slate-500 dark:text-slate-400">Unlock Progress</span>
+                        <span className="text-xs font-bold text-indigo-500">{Math.floor(progress)}%</span>
+                    </div>
+                    <div className="w-full bg-slate-200 dark:bg-slate-700 rounded-full h-2">
+                        <div className="bg-indigo-500 h-2 rounded-full" style={{ width: `${progress}%` }}></div>
+                    </div>
+                    <div className="absolute top-4 right-4 text-slate-400 dark:text-slate-500">
+                       <LockIcon className="text-lg" />
+                    </div>
+                </div>
+            )}
+        </div>
+    );
+};
 
 
 export default Dashboard;

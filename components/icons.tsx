@@ -36,3 +36,7 @@ export const LanguageIcon: React.FC<{ className?: string }> = ({ className }) =>
 export const SpeakerIcon: React.FC<{ className?: string }> = ({ className }) => (
     <i className={`fa-solid fa-volume-high ${className}`}></i>
 );
+
+export const LockIcon: React.FC<{ className?: string }> = ({ className }) => (
+    <i className={`fa-solid fa-lock ${className}`}></i>
+);
