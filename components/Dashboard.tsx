@@ -1,184 +1,190 @@
-
 import React from 'react';
 import { useUserData } from '../hooks/useUserData';
-// Fix: Import TranslationKey for type casting.
-import { useLocalization, type TranslationKey } from '../hooks/useLocalization';
+import { useLocalization } from '../hooks/useLocalization';
 import { AppView } from '../types';
-import { HIRAGANA_DATA, KATAKANA_DATA, KANJI_DATA, ACHIEVEMENTS } from '../constants';
-import { BookOpenIcon, LanguageIcon, LockIcon, QuestionMarkCircleIcon } from './icons';
+import { HIRAGANA_DATA, KATAKANA_DATA, KANJI_DATA, XP_PER_LEVEL, ACHIEVEMENTS } from '../constants';
+import { TrophyIcon, StarIcon, BookOpenIcon, LockIcon, QuestionMarkCircleIcon } from './icons';
 import Tooltip from './Tooltip';
-import { BarChart, Bar, XAxis, YAxis, Tooltip as RechartsTooltip, Legend, ResponsiveContainer } from 'recharts';
 
-interface DashboardProps {
-    setView: (view: AppView) => void;
-}
-
-const Dashboard: React.FC<DashboardProps> = ({ setView }) => {
-    const { userData } = useUserData();
-    const { t } = useLocalization();
-
-    const hiraganaLearned = Object.values(userData.hiraganaMastery).filter(m => m.level > 0).length;
-    const katakanaLearned = Object.values(userData.katakanaMastery).filter(m => m.level > 0).length;
-    const kanjiLearned = Object.values(userData.kanjiMastery).filter(m => m.level > 0).length;
-
-    const chartData = userData.dailyProgress.slice(-7).map(d => ({
-        name: new Date(d.date).toLocaleDateString(undefined, { weekday: 'short' }),
-        xp: d.xp,
-    }));
-    
-    // Progress towards unlocks
-    const hiraganaMasteryPercent = (hiraganaLearned / HIRAGANA_DATA.length);
-    const katakanaMasteryPercent = (katakanaLearned / KATAKANA_DATA.length);
-    const kanjiMasteryPercent = (kanjiLearned / KANJI_DATA.length);
-
-    // Words unlock: 100% Hira, 100% Kata, 20% Kanji
-    const WORDS_UNLOCK_REQ = { h: 1.0, k: 1.0, j: 0.2 };
-    const wordsProgress = Math.min(
-        (
-            (Math.min(hiraganaMasteryPercent / WORDS_UNLOCK_REQ.h, 1.0) * 0.45) +
-            (Math.min(katakanaMasteryPercent / WORDS_UNLOCK_REQ.k, 1.0) * 0.45) +
-            (Math.min(kanjiMasteryPercent / WORDS_UNLOCK_REQ.j, 1.0) * 0.10)
-        ) * 100,
-        100
-    );
-    const isWordsLocked = wordsProgress < 100;
-
-    // Sentences unlock: 100% Hira, 100% Kata, 50% Kanji
-    const SENTENCES_UNLOCK_REQ = { h: 1.0, k: 1.0, j: 0.5 };
-    const sentencesProgress = Math.min(
-        (
-            (Math.min(hiraganaMasteryPercent / SENTENCES_UNLOCK_REQ.h, 1.0) * 0.35) +
-            (Math.min(katakanaMasteryPercent / SENTENCES_UNLOCK_REQ.k, 1.0) * 0.35) +
-            (Math.min(kanjiMasteryPercent / SENTENCES_UNLOCK_REQ.j, 1.0) * 0.30)
-        ) * 100,
-        100
-    );
-    const isSentencesLocked = sentencesProgress < 100;
-
-    return (
-        <div className="space-y-8">
-            <h1 className="text-3xl font-bold text-slate-800 dark:text-slate-100">{t('dashboard.welcome')}</h1>
-            
-            {/* Stats Grid */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-                <StatCard title={t('dashboard.hiragana')} value={`${hiraganaLearned} / ${HIRAGANA_DATA.length}`} icon={<LanguageIcon className="text-pink-500" />} />
-                <StatCard title={t('dashboard.katakana')} value={`${katakanaLearned} / ${KATAKANA_DATA.length}`} icon={<LanguageIcon className="text-blue-500" />} />
-                <StatCard title={t('dashboard.kanji')} value={`${kanjiLearned} / ${KANJI_DATA.length}`} icon={<BookOpenIcon className="text-green-500" />} />
-                <StatCard title={t('dashboard.achievements')} value={`${userData.achievements.length} / ${ACHIEVEMENTS.length}`} icon={<i className="fa-solid fa-trophy text-yellow-500"></i>} />
-            </div>
-
-            {/* Learning Modules */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                <ModuleCard title={t('dashboard.module.learnHiragana.title')} description={t('dashboard.module.learnHiragana.description')} onClick={() => setView(AppView.Hiragana)} isHighlighted={!userData.hasCompletedOnboarding && hiraganaLearned === 0} />
-                <ModuleCard title={t('dashboard.module.learnKatakana.title')} description={t('dashboard.module.learnKatakana.description')} onClick={() => setView(AppView.Katakana)} />
-                <ModuleCard title={t('dashboard.module.learnKanji.title')} description={t('dashboard.module.learnKanji.description')} onClick={() => setView(AppView.Kanji)} />
-                <ModuleCard 
-                    title={t('dashboard.module.wordBuilder.title')} 
-                    description={t('dashboard.module.wordBuilder.description')} 
-                    onClick={() => !isWordsLocked && setView(AppView.Words)}
-                    isLocked={isWordsLocked}
-                    progress={wordsProgress}
-                />
-                <ModuleCard 
-                    title={t('dashboard.module.sentencePractice.title')} 
-                    description={t('dashboard.module.sentencePractice.description')} 
-                    onClick={() => !isSentencesLocked && setView(AppView.Sentences)} 
-                    isLocked={isSentencesLocked}
-                    progress={sentencesProgress}
-                />
-            </div>
-            
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                {/* Weekly Progress */}
-                <div className="bg-white dark:bg-slate-800 p-6 rounded-xl shadow-lg">
-                    <h3 className="text-lg font-semibold mb-4">{t('dashboard.weeklyXP')}</h3>
-                    <div style={{ width: '100%', height: 300 }}>
-                        <ResponsiveContainer>
-                            <BarChart data={chartData}>
-                                <XAxis dataKey="name" stroke="rgb(100 116 139)" />
-                                <YAxis stroke="rgb(100 116 139)" />
-                                <RechartsTooltip contentStyle={{ backgroundColor: 'rgb(30 41 59)', border: 'none', borderRadius: '0.5rem' }} />
-                                <Legend />
-                                <Bar dataKey="xp" fill="rgb(99 102 241)" />
-                            </BarChart>
-                        </ResponsiveContainer>
-                    </div>
-                </div>
-
-                {/* Achievements */}
-                <div className="bg-white dark:bg-slate-800 p-6 rounded-xl shadow-lg">
-                    <h3 className="text-lg font-semibold mb-4">{t('achievements.title')}</h3>
-                    <div className="space-y-3 max-h-[300px] overflow-y-auto pr-2">
-                        {ACHIEVEMENTS.map(ach => (
-                            <div key={ach.id} className={`flex items-center gap-4 p-3 rounded-lg ${userData.achievements.includes(ach.id) ? 'bg-green-100 dark:bg-green-900 dark:bg-opacity-50' : 'bg-slate-100 dark:bg-slate-700 dark:bg-opacity-50 opacity-60'}`}>
-                                <div className={`text-2xl ${userData.achievements.includes(ach.id) ? 'text-green-500' : 'text-slate-400'}`}>
-                                    {ach.icon}
-                                </div>
-                                <div>
-                                    {/* Fix: Cast ach.nameKey to TranslationKey to match the 't' function's expected argument type. */}
-                                    <p className="font-semibold">{t(ach.nameKey as TranslationKey)}</p>
-                                    {/* Fix: Cast ach.descriptionKey to TranslationKey to match the 't' function's expected argument type. */}
-                                    <p className="text-sm text-slate-600 dark:text-slate-400">{t(ach.descriptionKey as TranslationKey)}</p>
-                                </div>
-                            </div>
-                        ))}
-                    </div>
-                </div>
-            </div>
-        </div>
-    );
-};
-
-const StatCard: React.FC<{ title: string; value: string; icon: React.ReactNode }> = ({ title, value, icon }) => (
-    <div className="bg-white dark:bg-slate-800 p-6 rounded-xl shadow-lg flex items-center space-x-4">
-        <div className="text-3xl">{icon}</div>
+// Helper component for individual stats
+const StatCard: React.FC<{ label: string; value: string | number; icon: React.ReactNode }> = ({ label, value, icon }) => (
+    <div className="bg-white dark:bg-slate-800 p-4 rounded-lg shadow-md flex items-center space-x-4">
+        <div className="text-2xl text-indigo-500">{icon}</div>
         <div>
-            <p className="text-slate-500 dark:text-slate-400 text-sm">{title}</p>
-            <p className="text-2xl font-bold">{value}</p>
+            <p className="text-sm text-slate-500 dark:text-slate-400">{label}</p>
+            <p className="text-xl font-bold">{value}</p>
         </div>
     </div>
 );
 
+// Helper component for learning modules
 const ModuleCard: React.FC<{
     title: string;
     description: string;
     onClick: () => void;
-    isLocked?: boolean;
-    progress?: number;
-    isHighlighted?: boolean;
-}> = ({ title, description, onClick, isLocked = false, progress = 0, isHighlighted = false }) => {
-    const { t } = useLocalization();
-    const lockedClasses = "opacity-70 cursor-not-allowed";
-    const unlockedClasses = "hover:shadow-xl hover:scale-105 transition-transform duration-200 cursor-pointer";
-    const highlightedClasses = isHighlighted ? "animate-pulse border-2 border-indigo-400" : "";
+    unlocked: boolean;
+    progressPercent: number;
+    unlockHint?: string;
+}> = ({ title, description, onClick, unlocked, progressPercent, unlockHint }) => (
+    <div
+        onClick={unlocked ? onClick : undefined}
+        className={`relative p-6 rounded-lg shadow-lg transition-all duration-300 ${unlocked ? 'bg-white dark:bg-slate-800 cursor-pointer hover:shadow-xl hover:-translate-y-1' : 'bg-slate-100 dark:bg-slate-800/50'}`}
+    >
+        {!unlocked && (
+            <div className="absolute top-4 right-4 flex items-center gap-2">
+                <LockIcon className="text-slate-500 dark:text-slate-400" />
+                {unlockHint && (
+                    <Tooltip text={unlockHint}>
+                        <QuestionMarkCircleIcon className="text-slate-500 dark:text-slate-400 cursor-help" />
+                    </Tooltip>
+                )}
+            </div>
+        )}
+        <h3 className={`text-xl font-bold mb-2 ${!unlocked && 'text-slate-500 dark:text-slate-400'}`}>{title}</h3>
+        <p className={`text-sm text-slate-600 dark:text-slate-300 mb-4 ${!unlocked && 'opacity-60'}`}>{description}</p>
+        <div className="w-full bg-slate-200 dark:bg-slate-700 rounded-full h-2">
+            <div className="bg-indigo-500 h-2 rounded-full" style={{ width: `${progressPercent}%` }}></div>
+        </div>
+    </div>
+);
 
+
+const Dashboard: React.FC<{ setView: (v: AppView) => void }> = ({ setView }) => {
+    const { userData } = useUserData();
+    const { t } = useLocalization();
+
+    // --- Calculations ---
+    const hiraMasteryCount = Object.keys(userData.hiraganaMastery).length;
+    const kataMasteryCount = Object.keys(userData.katakanaMastery).length;
+    const kanjiMasteryCount = Object.keys(userData.kanjiMastery).length;
+
+    const hiraPct = (hiraMasteryCount / HIRAGANA_DATA.length) * 100;
+    const kataPct = (kataMasteryCount / KATAKANA_DATA.length) * 100;
+    const kanjiPct = (kanjiMasteryCount / KANJI_DATA.length) * 100;
+
+    const wordsUnlocked = hiraPct >= 100 && kataPct >= 100 && kanjiPct >= 20;
+    const sentencesUnlocked = hiraPct >= 100 && kataPct >= 100 && kanjiPct >= 50;
+    
+    const calculateStreak = (dailyProgress: typeof userData.dailyProgress): number => {
+        if (dailyProgress.length === 0) return 0;
+
+        const dates = [...new Set(dailyProgress.map(d => d.date))].sort((a,b) => new Date(b).getTime() - new Date(a).getTime());
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        const yesterday = new Date(today);
+        yesterday.setDate(yesterday.getDate() - 1);
+        
+        let lastDate = new Date(dates[0]);
+        lastDate.setHours(0, 0, 0, 0);
+
+        if (lastDate.getTime() !== today.getTime() && lastDate.getTime() !== yesterday.getTime()) {
+            return 0;
+        }
+
+        let streak = 1;
+        for (let i = 1; i < dates.length; i++) {
+            const currentDate = new Date(dates[i]);
+            currentDate.setHours(0, 0, 0, 0);
+            
+            const expectedPreviousDate = new Date(lastDate);
+            expectedPreviousDate.setDate(expectedPreviousDate.getDate() - 1);
+            
+            if (currentDate.getTime() === expectedPreviousDate.getTime()) {
+                streak++;
+                lastDate = currentDate;
+            } else if (currentDate.getTime() < expectedPreviousDate.getTime()) {
+                break;
+            }
+        }
+        return streak;
+    };
+    
+    const dailyStreak = calculateStreak(userData.dailyProgress);
+    const earnedAchievements = ACHIEVEMENTS.filter(ach => userData.achievements.includes(ach.id));
+    
     return (
-        <div
-            className={`bg-white dark:bg-slate-800 p-6 rounded-xl shadow-lg relative overflow-hidden ${isLocked ? lockedClasses : unlockedClasses} ${highlightedClasses}`}
-            onClick={isLocked ? undefined : onClick}
-        >
-            <h3 className={`text-lg font-semibold mb-2 ${isLocked ? 'text-slate-500 dark:text-slate-400' : 'text-indigo-600 dark:text-indigo-400'}`}>{title}</h3>
-            <p className="text-slate-600 dark:text-slate-400 text-sm">{description}</p>
-            {isLocked && (
-                <div className="mt-4">
-                    <div className="flex justify-between items-center mb-1">
-                        <span className="text-xs font-semibold text-slate-500 dark:text-slate-400">{t('dashboard.unlockProgress')}</span>
-                        <span className="text-xs font-bold text-indigo-500">{Math.floor(progress)}%</span>
-                    </div>
-                    <div className="w-full bg-slate-200 dark:bg-slate-700 rounded-full h-2">
-                        <div className="bg-indigo-500 h-2 rounded-full" style={{ width: `${progress}%` }}></div>
-                    </div>
-                    <div className="absolute top-4 right-4 text-slate-400 dark:text-slate-500 flex items-center gap-2">
-                       <Tooltip text={t(title === t('dashboard.module.wordBuilder.title') ? 'tooltips.wordsLocked' : 'tooltips.sentencesLocked')}>
-                            <QuestionMarkCircleIcon className="text-base cursor-help"/>
-                       </Tooltip>
-                       <LockIcon className="text-lg" />
+        <div className="space-y-8">
+            {/* Stats Panel */}
+            <section>
+                <h2 className="text-2xl font-bold mb-4">{t('dashboard.welcome')}</h2>
+                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
+                    <StatCard label={t('dashboard.stats.level')} value={userData.level} icon={<TrophyIcon />} />
+                    <StatCard label={t('dashboard.stats.xp')} value={`${userData.xp} / ${XP_PER_LEVEL}`} icon={<StarIcon />} />
+                    <StatCard label={t('dashboard.stats.streak')} value={`${dailyStreak} Days`} icon={<i className="fa-solid fa-fire"></i>} />
+                    <StatCard label={t('dashboard.stats.characters')} value={hiraMasteryCount + kataMasteryCount + kanjiMasteryCount} icon={<BookOpenIcon />} />
+                </div>
+                 <div className="mt-4">
+                    <p className="text-sm text-slate-600 dark:text-slate-400 mb-1">{t('dashboard.progress.toNextLevel')}</p>
+                    <div className="w-full bg-slate-200 dark:bg-slate-700 rounded-full h-2.5">
+                        <div className="bg-green-500 h-2.5 rounded-full" style={{ width: `${(userData.xp / XP_PER_LEVEL) * 100}%` }}></div>
                     </div>
                 </div>
-            )}
+            </section>
+
+            {/* Learning Modules */}
+            <section>
+                <h2 className="text-2xl font-bold mb-4">{t('dashboard.modules')}</h2>
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                    <ModuleCard 
+                        title={t('dashboard.module.learnHiragana.title')}
+                        description={t('dashboard.module.learnHiragana.description')}
+                        onClick={() => setView(AppView.Hiragana)}
+                        unlocked={true}
+                        progressPercent={hiraPct}
+                    />
+                    <ModuleCard 
+                        title={t('dashboard.module.learnKatakana.title')}
+                        description={t('dashboard.module.learnKatakana.description')}
+                        onClick={() => setView(AppView.Katakana)}
+                        unlocked={true}
+                        progressPercent={kataPct}
+                    />
+                     <ModuleCard 
+                        title={t('dashboard.module.learnKanji.title')}
+                        description={t('dashboard.module.learnKanji.description')}
+                        onClick={() => setView(AppView.Kanji)}
+                        unlocked={true}
+                        progressPercent={kanjiPct}
+                    />
+                     <ModuleCard 
+                        title={t('dashboard.module.buildWords.title')}
+                        description={t('dashboard.module.buildWords.description')}
+                        onClick={() => setView(AppView.Words)}
+                        unlocked={wordsUnlocked}
+                        progressPercent={(wordsUnlocked || (hiraPct === 100 && kataPct === 100)) ? (kanjiPct / 20 * 100) : ((hiraPct + kataPct)/2)}
+                        unlockHint={t('dashboard.unlocks.hint.words')}
+                    />
+                    <ModuleCard 
+                        title={t('dashboard.module.practiceSentences.title')}
+                        description={t('dashboard.module.practiceSentences.description')}
+                        onClick={() => setView(AppView.Sentences)}
+                        unlocked={sentencesUnlocked}
+                        progressPercent={(sentencesUnlocked || (hiraPct === 100 && kataPct === 100)) ? (kanjiPct / 50 * 100) : ((hiraPct + kataPct)/2)}
+                        unlockHint={t('dashboard.unlocks.hint.sentences')}
+                    />
+                </div>
+            </section>
+
+            {/* Achievements Panel */}
+            <section>
+                <h2 className="text-2xl font-bold mb-4">{t('dashboard.achievements.title')}</h2>
+                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4">
+                    {earnedAchievements.length > 0 ? (
+                        earnedAchievements.map(ach => (
+                            <Tooltip key={ach.id} text={t(ach.descriptionKey as any)}>
+                                <div className="flex flex-col items-center text-center p-4 bg-white dark:bg-slate-800 rounded-lg shadow-md">
+                                    <div className="text-3xl text-yellow-500 mb-2">{ach.icon}</div>
+                                    <p className="text-xs font-semibold">{t(ach.nameKey as any)}</p>
+                                </div>
+                            </Tooltip>
+                        ))
+                    ) : (
+                        <p className="col-span-full text-slate-500">{t('dashboard.achievements.none')}</p>
+                    )}
+                </div>
+            </section>
         </div>
     );
 };
-
 
 export default Dashboard;

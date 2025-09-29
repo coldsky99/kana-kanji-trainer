@@ -25,7 +25,7 @@ export const LanguageSelectionModal: React.FC<LanguageSelectionModalProps> = ({
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50 p-4">
-      <div className="bg-white dark:bg-slate-800 rounded-lg p-8 max-w-md w-full mx-4 shadow-xl transform transition-all animate-fade-in-up">
+      <div className="bg-white dark:bg-slate-800 rounded-lg p-8 max-w-md w-full mx-4 shadow-xl transform transition-all">
         <div className="text-center mb-6">
           <div className="inline-block p-3 bg-indigo-100 dark:bg-indigo-900 rounded-full mb-4">
             <GlobeIcon className="w-10 h-10 text-indigo-500 dark:text-indigo-400" />

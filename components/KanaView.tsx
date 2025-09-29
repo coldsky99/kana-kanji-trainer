@@ -33,7 +33,6 @@ const KanaView: React.FC<KanaViewProps> = ({ kanaType }) => {
             }
         };
 
-        // The voices list is loaded asynchronously.
         loadVoices();
         if (window.speechSynthesis.onvoiceschanged !== undefined) {
             window.speechSynthesis.onvoiceschanged = loadVoices;
@@ -52,7 +51,6 @@ const KanaView: React.FC<KanaViewProps> = ({ kanaType }) => {
         }
 
         try {
-            // Cancel any ongoing speech to prevent overlap
             window.speechSynthesis.cancel();
 
             const utterance = new SpeechSynthesisUtterance(character);
@@ -62,9 +60,7 @@ const KanaView: React.FC<KanaViewProps> = ({ kanaType }) => {
             
             setPlayingChar(character);
 
-            utterance.onend = () => {
-                setPlayingChar(null);
-            };
+            utterance.onend = () => setPlayingChar(null);
             
             utterance.onerror = (event) => {
                 console.error('SpeechSynthesisUtterance.onerror:', event);
@@ -82,7 +78,6 @@ const KanaView: React.FC<KanaViewProps> = ({ kanaType }) => {
         const questions: QuizQuestion[] = [];
         if (kanaData.length < 4) return [];
 
-        // Generate 10 Kana-to-Romaji questions
         const shuffledKana = [...kanaData].sort(() => 0.5 - Math.random());
         for (let i = 0; i < Math.min(10, shuffledKana.length); i++) {
             const char = shuffledKana[i];
@@ -102,7 +97,6 @@ const KanaView: React.FC<KanaViewProps> = ({ kanaType }) => {
             });
         }
         
-        // Generate 10 Romaji-to-Kana questions
         for (let i = 0; i < Math.min(10, shuffledKana.length); i++) {
             const char = shuffledKana[i];
             const options = [char.kana];
@@ -149,20 +143,20 @@ const KanaView: React.FC<KanaViewProps> = ({ kanaType }) => {
     
     return (
         <div className="space-y-6">
-            <div className="flex justify-between items-center">
-                <h1 className="text-3xl font-bold">
+            <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4">
+                <h1 className="text-2xl sm:text-3xl font-bold text-center sm:text-left">
                     {kanaType === 'hiragana' ? t('dashboard.module.learnHiragana.title') : t('dashboard.module.learnKatakana.title')}
                 </h1>
                 <button
                     onClick={() => setIsQuizVisible(true)}
-                    className="bg-indigo-600 text-white px-6 py-2 rounded-lg font-semibold hover:bg-indigo-700 transition-colors"
+                    className="bg-indigo-600 text-white px-5 py-2.5 rounded-lg font-semibold hover:bg-indigo-700 transition-colors w-full sm:w-auto"
                     disabled={quizQuestions.length === 0}
                 >
                     {t('kanaView.startQuiz')}
                 </button>
             </div>
             
-            <div className="grid grid-cols-5 sm:grid-cols-6 md:grid-cols-8 lg:grid-cols-10 gap-3">
+            <div className="grid grid-cols-5 sm:grid-cols-8 lg:grid-cols-10 xl:grid-cols-12 gap-2 sm:gap-3 md:gap-4">
                 {kanaData.map((character) => {
                     const masteryLevel = getMasteryLevel(character.kana);
                     const isPlaying = playingChar === character.kana;
@@ -172,20 +166,20 @@ const KanaView: React.FC<KanaViewProps> = ({ kanaType }) => {
                             key={character.kana}
                             onClick={() => playAudio(character.kana)}
                             onTouchStart={(e) => { e.preventDefault(); playAudio(character.kana); }}
-                            className={`relative bg-white dark:bg-slate-800 rounded-lg shadow p-2 text-center cursor-pointer transition-all duration-200 aspect-square flex flex-col justify-center items-center ${isPlaying ? 'ring-2 ring-indigo-500 scale-110' : 'hover:scale-105'}`}
+                            className={`relative bg-white dark:bg-slate-800 rounded-lg shadow p-1 sm:p-2 text-center cursor-pointer transition-all duration-200 aspect-square flex flex-col justify-center items-center ${isPlaying ? 'ring-2 ring-indigo-500 scale-110 z-10' : 'hover:scale-105'}`}
                         >
-                            <div className="absolute top-1 right-1 text-slate-300 dark:text-slate-600">
-                                <SpeakerIcon className="w-3 h-3" />
+                            <div className="absolute top-1.5 right-1.5 text-slate-300 dark:text-slate-600">
+                                <SpeakerIcon className="w-3.5 h-3.5" />
                             </div>
                             
-                            <div className="text-4xl font-bold text-slate-800 dark:text-slate-100">
+                            <div className="text-3xl sm:text-4xl font-bold text-slate-800 dark:text-slate-100">
                                 {character.kana}
                             </div>
-                            <div className="text-sm text-slate-500 dark:text-slate-400">
+                            <div className="text-xs sm:text-sm text-slate-500 dark:text-slate-400 mt-1">
                                 {character.romaji}
                             </div>
                             
-                            <div className="absolute bottom-1 w-[calc(100%-8px)] h-1 bg-slate-200 dark:bg-slate-700 rounded-full">
+                            <div className="absolute bottom-1.5 w-[calc(100%-12px)] h-1.5 bg-slate-200 dark:bg-slate-700 rounded-full overflow-hidden">
                                 <div 
                                     className="h-full rounded-full bg-indigo-500 transition-all duration-300"
                                     style={{ width: `${(masteryLevel / 8) * 100}%` }}
