@@ -160,43 +160,43 @@ export const KANJI_DATA: Kanji[] = [
 export const ACHIEVEMENTS: Achievement[] = [
     {
         id: 'first_steps_h',
-        name: 'First Hiragana',
-        description: 'Learn your first 10 Hiragana characters.',
+        nameKey: 'achievements.first_steps_h.name',
+        descriptionKey: 'achievements.first_steps_h.description',
         icon: React.createElement(StarIcon),
         condition: (userData: UserData) => Object.values(userData.hiraganaMastery).filter(m => m.level > 0).length >= 10,
     },
     {
         id: 'first_steps_k',
-        name: 'First Katakana',
-        description: 'Learn your first 10 Katakana characters.',
+        nameKey: 'achievements.first_steps_k.name',
+        descriptionKey: 'achievements.first_steps_k.description',
         icon: React.createElement(StarIcon),
         condition: (userData: UserData) => Object.values(userData.katakanaMastery).filter(m => m.level > 0).length >= 10,
     },
     {
         id: 'kanji_beginner',
-        name: 'Kanji Beginner',
-        description: 'Learn your first 10 Kanji.',
+        nameKey: 'achievements.kanji_beginner.name',
+        descriptionKey: 'achievements.kanji_beginner.description',
         icon: React.createElement(BookOpenIcon),
         condition: (userData: UserData) => Object.values(userData.kanjiMastery).filter(m => m.level > 0).length >= 10,
     },
     {
         id: 'level_5',
-        name: 'Level 5!',
-        description: 'Reach level 5.',
+        nameKey: 'achievements.level_5.name',
+        descriptionKey: 'achievements.level_5.description',
         icon: React.createElement(TrophyIcon),
         condition: (userData: UserData) => userData.level >= 5,
     },
     {
         id: 'quick_learner',
-        name: 'Quick Learner',
-        description: 'Earn 100 XP in a single day.',
+        nameKey: 'achievements.quick_learner.name',
+        descriptionKey: 'achievements.quick_learner.description',
         icon: React.createElement(BoltIcon),
         condition: (userData: UserData) => userData.dailyProgress.some(d => d.xp >= 100),
     },
     {
         id: 'consistent',
-        name: 'Consistent Learner',
-        description: 'Practice for 3 days in a row.',
+        nameKey: 'achievements.consistent.name',
+        descriptionKey: 'achievements.consistent.description',
         icon: React.createElement(ChartBarIcon),
         condition: (userData: UserData) => {
             if (userData.dailyProgress.length < 3) return false;
@@ -224,8 +224,8 @@ export const ACHIEVEMENTS: Achievement[] = [
     },
     {
         id: 'hiragana_master',
-        name: 'Hiragana Master',
-        description: 'Master all basic Hiragana.',
+        nameKey: 'achievements.hiragana_master.name',
+        descriptionKey: 'achievements.hiragana_master.description',
         icon: React.createElement(AcademicCapIcon),
         condition: (userData) => Object.keys(userData.hiraganaMastery).length >= HIRAGANA_DATA.length,
     }

@@ -1,6 +1,8 @@
 
+
 import React from 'react';
 import { useUserData } from '../hooks/useUserData';
+import { useLocalization } from '../hooks/useLocalization';
 import { AppView } from '../types';
 import { HIRAGANA_DATA, KATAKANA_DATA, KANJI_DATA, ACHIEVEMENTS } from '../constants';
 import { BookOpenIcon, StarIcon, TrophyIcon, LanguageIcon, LockIcon } from './icons';
@@ -12,12 +14,11 @@ interface DashboardProps {
 
 const Dashboard: React.FC<DashboardProps> = ({ setView }) => {
     const { userData } = useUserData();
+    const { t } = useLocalization();
 
     const hiraganaLearned = Object.values(userData.hiraganaMastery).filter(m => m.level > 0).length;
     const katakanaLearned = Object.values(userData.katakanaMastery).filter(m => m.level > 0).length;
     const kanjiLearned = Object.values(userData.kanjiMastery).filter(m => m.level > 0).length;
-
-    const unlockedAchievements = ACHIEVEMENTS.filter(ach => userData.achievements.includes(ach.id));
 
     const chartData = userData.dailyProgress.slice(-7).map(d => ({
         name: new Date(d.date).toLocaleDateString(undefined, { weekday: 'short' }),
@@ -55,31 +56,31 @@ const Dashboard: React.FC<DashboardProps> = ({ setView }) => {
 
     return (
         <div className="space-y-8">
-            <h1 className="text-3xl font-bold text-slate-800 dark:text-slate-100">Welcome back!</h1>
+            <h1 className="text-3xl font-bold text-slate-800 dark:text-slate-100">{t('dashboard.welcome')}</h1>
             
             {/* Stats Grid */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-                <StatCard title="Hiragana Learned" value={`${hiraganaLearned} / ${HIRAGANA_DATA.length}`} icon={<LanguageIcon className="text-pink-500" />} />
-                <StatCard title="Katakana Learned" value={`${katakanaLearned} / ${KATAKANA_DATA.length}`} icon={<LanguageIcon className="text-blue-500" />} />
-                <StatCard title="Kanji Learned" value={`${kanjiLearned} / ${KANJI_DATA.length}`} icon={<BookOpenIcon className="text-green-500" />} />
-                <StatCard title="Achievements" value={`${unlockedAchievements.length} / ${ACHIEVEMENTS.length}`} icon={<TrophyIcon className="text-yellow-500" />} />
+                <StatCard title={t('dashboard.hiraganaLearned')} value={`${hiraganaLearned} / ${HIRAGANA_DATA.length}`} icon={<LanguageIcon className="text-pink-500" />} />
+                <StatCard title={t('dashboard.katakanaLearned')} value={`${katakanaLearned} / ${KATAKANA_DATA.length}`} icon={<LanguageIcon className="text-blue-500" />} />
+                <StatCard title={t('dashboard.kanjiLearned')} value={`${kanjiLearned} / ${KANJI_DATA.length}`} icon={<BookOpenIcon className="text-green-500" />} />
+                <StatCard title={t('dashboard.achievements')} value={`${userData.achievements.length} / ${ACHIEVEMENTS.length}`} icon={<TrophyIcon className="text-yellow-500" />} />
             </div>
 
             {/* Learning Modules */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                <ModuleCard title="Learn Hiragana" description="Start with the basic Japanese phonetic script." onClick={() => setView(AppView.Hiragana)} />
-                <ModuleCard title="Learn Katakana" description="Learn the script for foreign words and emphasis." onClick={() => setView(AppView.Katakana)} />
-                <ModuleCard title="Learn Kanji" description="Begin your journey into Chinese characters." onClick={() => setView(AppView.Kanji)} />
+                <ModuleCard title={t('dashboard.module.learnHiragana.title')} description={t('dashboard.module.learnHiragana.description')} onClick={() => setView(AppView.Hiragana)} />
+                <ModuleCard title={t('dashboard.module.learnKatakana.title')} description={t('dashboard.module.learnKatakana.description')} onClick={() => setView(AppView.Katakana)} />
+                <ModuleCard title={t('dashboard.module.learnKanji.title')} description={t('dashboard.module.learnKanji.description')} onClick={() => setView(AppView.Kanji)} />
                 <ModuleCard 
-                    title="Word Builder" 
-                    description="Form words with the characters you've learned." 
+                    title={t('dashboard.module.wordBuilder.title')} 
+                    description={t('dashboard.module.wordBuilder.description')} 
                     onClick={() => !isWordsLocked && setView(AppView.Words)}
                     isLocked={isWordsLocked}
                     progress={wordsProgress}
                 />
                 <ModuleCard 
-                    title="Sentence Practice" 
-                    description="Read and understand Japanese sentences." 
+                    title={t('dashboard.module.sentencePractice.title')} 
+                    description={t('dashboard.module.sentencePractice.description')} 
                     onClick={() => !isSentencesLocked && setView(AppView.Sentences)} 
                     isLocked={isSentencesLocked}
                     progress={sentencesProgress}
@@ -89,7 +90,7 @@ const Dashboard: React.FC<DashboardProps> = ({ setView }) => {
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                 {/* Weekly Progress */}
                 <div className="bg-white dark:bg-slate-800 p-6 rounded-xl shadow-lg">
-                    <h3 className="text-lg font-semibold mb-4">Weekly XP Progress</h3>
+                    <h3 className="text-lg font-semibold mb-4">{t('dashboard.weeklyXP')}</h3>
                     <div style={{ width: '100%', height: 300 }}>
                         <ResponsiveContainer>
                             <BarChart data={chartData}>
@@ -105,7 +106,7 @@ const Dashboard: React.FC<DashboardProps> = ({ setView }) => {
 
                 {/* Achievements */}
                 <div className="bg-white dark:bg-slate-800 p-6 rounded-xl shadow-lg">
-                    <h3 className="text-lg font-semibold mb-4">Achievements</h3>
+                    <h3 className="text-lg font-semibold mb-4">{t('achievements.title')}</h3>
                     <div className="space-y-3 max-h-[300px] overflow-y-auto pr-2">
                         {ACHIEVEMENTS.map(ach => (
                             <div key={ach.id} className={`flex items-center gap-4 p-3 rounded-lg ${userData.achievements.includes(ach.id) ? 'bg-green-100 dark:bg-green-900 dark:bg-opacity-50' : 'bg-slate-100 dark:bg-slate-700 dark:bg-opacity-50 opacity-60'}`}>
@@ -113,8 +114,8 @@ const Dashboard: React.FC<DashboardProps> = ({ setView }) => {
                                     {ach.icon}
                                 </div>
                                 <div>
-                                    <p className="font-semibold">{ach.name}</p>
-                                    <p className="text-sm text-slate-600 dark:text-slate-400">{ach.description}</p>
+                                    <p className="font-semibold">{t(ach.nameKey)}</p>
+                                    <p className="text-sm text-slate-600 dark:text-slate-400">{t(ach.descriptionKey)}</p>
                                 </div>
                             </div>
                         ))}
@@ -142,6 +143,7 @@ const ModuleCard: React.FC<{
     isLocked?: boolean;
     progress?: number;
 }> = ({ title, description, onClick, isLocked = false, progress = 0 }) => {
+    const { t } = useLocalization();
     const lockedClasses = "opacity-70 cursor-not-allowed";
     const unlockedClasses = "hover:shadow-xl hover:scale-105 transition-transform duration-200 cursor-pointer";
 
@@ -155,7 +157,7 @@ const ModuleCard: React.FC<{
             {isLocked && (
                 <div className="mt-4">
                     <div className="flex justify-between items-center mb-1">
-                        <span className="text-xs font-semibold text-slate-500 dark:text-slate-400">Unlock Progress</span>
+                        <span className="text-xs font-semibold text-slate-500 dark:text-slate-400">{t('dashboard.unlockProgress')}</span>
                         <span className="text-xs font-bold text-indigo-500">{Math.floor(progress)}%</span>
                     </div>
                     <div className="w-full bg-slate-200 dark:bg-slate-700 rounded-full h-2">

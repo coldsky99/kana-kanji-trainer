@@ -60,8 +60,8 @@ export interface QuizQuestion {
 
 export interface Achievement {
     id: string;
-    name: string;
-    description: string;
+    nameKey: string;
+    descriptionKey: string;
     icon: React.ReactNode;
     condition: (userData: UserData) => boolean;
 }

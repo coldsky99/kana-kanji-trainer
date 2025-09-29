@@ -1,30 +1,35 @@
 import React, { useState, useMemo } from 'react';
 import { useUserData } from '../hooks/useUserData';
+import { useLocalization } from '../hooks/useLocalization';
 import type { QuizQuestion, Kanji } from '../types';
 import { QuizType } from '../types';
 import { KANJI_DATA, XP_PER_LESSON_COMPLETE } from '../constants';
 import QuizModal from './QuizModal';
 import Flashcard from './Flashcard';
 
-const KanjiCardBack: React.FC<{ kanji: Kanji }> = ({ kanji }) => (
-    <div className="text-left w-full h-full p-3 flex flex-col justify-center space-y-2 text-sm">
-        <div>
-            <p className="text-xs text-slate-500 dark:text-slate-400 font-semibold uppercase tracking-wider">Meaning</p>
-            <p className="font-medium text-base">{kanji.meaning}</p>
+const KanjiCardBack: React.FC<{ kanji: Kanji }> = ({ kanji }) => {
+    const { t } = useLocalization();
+    return (
+        <div className="text-left w-full h-full p-3 flex flex-col justify-center space-y-2 text-sm">
+            <div>
+                <p className="text-xs text-slate-500 dark:text-slate-400 font-semibold uppercase tracking-wider">{t('flashcard.meaning')}</p>
+                <p className="font-medium text-base">{kanji.meaning}</p>
+            </div>
+            <div>
+                <p className="text-xs text-slate-500 dark:text-slate-400 font-semibold uppercase tracking-wider">{t('flashcard.onyomi')}</p>
+                <p className="font-medium text-base">{kanji.onyomi}</p>
+            </div>
+            <div>
+                <p className="text-xs text-slate-500 dark:text-slate-400 font-semibold uppercase tracking-wider">{t('flashcard.kunyomi')}</p>
+                <p className="font-medium text-base">{kanji.kunyomi || t('flashcard.none')}</p>
+            </div>
         </div>
-        <div>
-            <p className="text-xs text-slate-500 dark:text-slate-400 font-semibold uppercase tracking-wider">On'yomi</p>
-            <p className="font-medium text-base">{kanji.onyomi}</p>
-        </div>
-        <div>
-            <p className="text-xs text-slate-500 dark:text-slate-400 font-semibold uppercase tracking-wider">Kun'yomi</p>
-            <p className="font-medium text-base">{kanji.kunyomi || 'None'}</p>
-        </div>
-    </div>
-);
+    );
+};
 
 const KanjiView: React.FC = () => {
     const { userData, updateMastery, addXp } = useUserData();
+    const { t } = useLocalization();
     const [isQuizVisible, setIsQuizVisible] = useState(false);
 
     const masteryData = userData.kanjiMastery;
@@ -118,13 +123,13 @@ const KanjiView: React.FC = () => {
     return (
         <div className="space-y-6">
             <div className="flex justify-between items-center">
-                <h1 className="text-3xl font-bold">JLPT N5 Kanji</h1>
+                <h1 className="text-3xl font-bold">{t('kanjiView.title')}</h1>
                 <button
                     onClick={() => setIsQuizVisible(true)}
                     className="bg-indigo-600 text-white px-6 py-2 rounded-lg font-semibold hover:bg-indigo-700 transition-colors"
                     disabled={quizQuestions.length === 0}
                 >
-                    Start Quiz
+                    {t('kanjiView.startQuiz')}
                 </button>
             </div>
 
@@ -156,7 +161,7 @@ const KanjiView: React.FC = () => {
                     questions={quizQuestions}
                     onComplete={handleQuizComplete}
                     onClose={() => setIsQuizVisible(false)}
-                    title="Kanji Quiz"
+                    title={t('kanjiView.quizTitle')}
                 />
             )}
         </div>

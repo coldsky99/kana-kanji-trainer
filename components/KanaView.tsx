@@ -1,6 +1,8 @@
 
+
 import React, { useState, useMemo } from 'react';
 import { useUserData } from '../hooks/useUserData';
+import { useLocalization } from '../hooks/useLocalization';
 import type { KanaType as KanaEnumType, QuizQuestion } from '../types';
 import { KanaType, QuizType } from '../types';
 import { HIRAGANA_DATA, KATAKANA_DATA, XP_PER_LESSON_COMPLETE } from '../constants';
@@ -13,6 +15,7 @@ interface KanaViewProps {
 
 const KanaView: React.FC<KanaViewProps> = ({ kanaType }) => {
     const { userData, updateMastery, addXp } = useUserData();
+    const { t } = useLocalization();
     const [isQuizVisible, setIsQuizVisible] = useState(false);
 
     const kanaData = kanaType === KanaType.Hiragana ? HIRAGANA_DATA : KATAKANA_DATA;
@@ -94,7 +97,7 @@ const KanaView: React.FC<KanaViewProps> = ({ kanaType }) => {
                     onClick={() => setIsQuizVisible(true)}
                     className="bg-indigo-600 text-white px-6 py-2 rounded-lg font-semibold hover:bg-indigo-700 transition-colors"
                 >
-                    Start Quiz
+                    {t('kanaView.startQuiz')}
                 </button>
             </div>
             
@@ -127,7 +130,7 @@ const KanaView: React.FC<KanaViewProps> = ({ kanaType }) => {
                     questions={quizQuestions} 
                     onComplete={handleQuizComplete} 
                     onClose={() => setIsQuizVisible(false)}
-                    title={`${kanaType.charAt(0).toUpperCase() + kanaType.slice(1)} Quiz`}
+                    title={t('kanaView.quizTitle', { kanaType: kanaType.charAt(0).toUpperCase() + kanaType.slice(1)})}
                 />
             )}
         </div>

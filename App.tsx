@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { UserDataProvider } from './hooks/useUserData';
+import { LocalizationProvider, useLocalization } from './hooks/useLocalization';
 import Dashboard from './components/Dashboard';
 import KanaView from './components/KanaView';
 import KanjiView from './components/KanjiView';
@@ -8,8 +9,9 @@ import SentenceView from './components/SentenceView';
 import { KanaType, AppView } from './types';
 import Header from './components/Header';
 
-const App: React.FC = () => {
+const AppContent: React.FC = () => {
     const [currentView, setCurrentView] = useState<AppView>(AppView.Dashboard);
+    const { t } = useLocalization();
 
     const renderView = () => {
         switch (currentView) {
@@ -31,18 +33,27 @@ const App: React.FC = () => {
     };
 
     return (
-        <UserDataProvider>
-            <div className="min-h-screen flex flex-col font-sans">
-                <Header currentView={currentView} setView={setCurrentView} />
-                <main className="flex-grow container mx-auto p-4 md:p-8">
-                    {renderView()}
-                </main>
-                <footer className="text-center p-4 text-xs text-slate-500 dark:text-slate-400">
-                    <p>Nihongo Master - Your journey to fluency starts here.</p>
-                </footer>
-            </div>
-        </UserDataProvider>
+        <div className="min-h-screen flex flex-col font-sans">
+            <Header currentView={currentView} setView={setCurrentView} />
+            <main className="flex-grow container mx-auto p-4 md:p-8">
+                {renderView()}
+            </main>
+            <footer className="text-center p-4 text-xs text-slate-500 dark:text-slate-400">
+                <p>{t('footer.message')}</p>
+            </footer>
+        </div>
     );
 };
+
+const App: React.FC = () => {
+    return (
+        <LocalizationProvider>
+            <UserDataProvider>
+                <AppContent />
+            </UserDataProvider>
+        </LocalizationProvider>
+    );
+};
+
 
 export default App;

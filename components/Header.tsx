@@ -1,69 +1,106 @@
-import React from 'react';
-import { AppView } from '../types';
+import React, { useState, useRef, useEffect } from 'react';
 import { useUserData } from '../hooks/useUserData';
+import { useLocalization } from '../hooks/useLocalization';
+import { AppView } from '../types';
+import { GlobeIcon } from './icons';
 
 interface HeaderProps {
-    currentView: AppView;
-    setView: (view: AppView) => void;
+  currentView: AppView;
+  setView: (view: AppView) => void;
 }
 
 const Header: React.FC<HeaderProps> = ({ currentView, setView }) => {
-    const { userData } = useUserData();
+  const { userData } = useUserData();
+  const { language, setLanguage, t } = useLocalization();
+  const [isLangDropdownOpen, setIsLangDropdownOpen] = useState(false);
+  const dropdownRef = useRef<HTMLDivElement>(null);
 
-    const totalCharactersLearned = 
-        Object.values(userData.hiraganaMastery).filter(m => m.level > 0).length +
-        Object.values(userData.katakanaMastery).filter(m => m.level > 0).length +
-        Object.values(userData.kanjiMastery).filter(m => m.level > 0).length;
+  const totalCharactersLearned = 
+    Object.keys(userData.hiraganaMastery).length +
+    Object.keys(userData.katakanaMastery).length +
+    Object.keys(userData.kanjiMastery).length;
 
-    return (
-        <header className="bg-gradient-to-r from-red-500 to-pink-500 text-white p-4 shadow-lg">
-            <div className="container mx-auto flex items-center justify-between">
-                {/* Logo Section with Japanese Flag and App Name */}
-                <div className="flex items-center space-x-3">
-                    {/* Japanese Flag Icon */}
-                    <div className="w-10 h-7 relative overflow-hidden rounded-sm border border-white border-opacity-30 shadow-sm">
-                        <div className="w-full h-full bg-white relative">
-                            <div className="absolute inset-0 flex items-center justify-center">
-                                <div className="w-5 h-5 bg-red-600 rounded-full shadow-sm"></div>
-                            </div>
-                        </div>
-                    </div>
-                    
-                    {/* App Name */}
-                    <h1 className="text-2xl font-bold tracking-wide">
-                        Nihongo Master
-                    </h1>
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+        setIsLangDropdownOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, [dropdownRef]);
+
+  const handleSetLanguage = (lang: 'en' | 'id') => {
+    setLanguage(lang);
+    setIsLangDropdownOpen(false);
+  }
+
+  return (
+    <header className="sticky top-0 z-50 bg-white dark:bg-slate-800 shadow-md dark:border-b dark:border-slate-700 px-6 py-4">
+      <div className="flex items-center justify-between max-w-7xl mx-auto">
+        <div className="flex items-center gap-3 cursor-pointer" onClick={() => setView(AppView.Dashboard)}>
+          <div className="flex items-center gap-2">
+            <div className="w-8 h-6 bg-red-500 rounded-sm flex items-center justify-center relative overflow-hidden">
+              <div className="absolute inset-0 bg-white">
+                <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-4 h-4 bg-red-500 rounded-full">
                 </div>
-
-                {/* Navigation */}
-                <nav className="flex space-x-2">
-                    <button
-                        onClick={() => setView(AppView.Dashboard)}
-                        className={`px-4 py-2 rounded-lg transition-colors duration-200 ${
-                            currentView === AppView.Dashboard
-                                ? 'bg-white text-red-500 font-semibold'
-                                : 'bg-white bg-opacity-20 hover:bg-opacity-30'
-                        }`}
-                    >
-                        Dashboard
-                    </button>
-                </nav>
-
-                {/* User Progress Indicator */}
-                <div className="flex items-center space-x-4">
-                    <div className="text-right">
-                        <div className="text-sm opacity-90">Level {userData.level}</div>
-                        <div className="text-xs opacity-75">
-                            {totalCharactersLearned} characters learned
-                        </div>
-                    </div>
-                    <div className="w-10 h-10 bg-white bg-opacity-20 rounded-full flex items-center justify-center">
-                        <i className="fas fa-user text-lg"></i>
-                    </div>
-                </div>
+              </div>
             </div>
-        </header>
-    );
+            <h1 className="text-2xl font-bold text-gray-800 dark:text-slate-100">Nihongo Master</h1>
+          </div>
+        </div>
+        
+        <nav className="flex items-center gap-4">
+          <button
+            onClick={() => setView(AppView.Dashboard)}
+            className={`px-4 py-2 rounded-lg font-medium transition-colors ${
+              currentView === AppView.Dashboard
+                ? 'bg-red-500 text-white'
+                : 'text-gray-700 dark:text-slate-300 hover:bg-gray-100 dark:hover:bg-slate-700'
+            }`}
+          >
+            {t('header.dashboard')}
+          </button>
+        </nav>
+        
+        <div className="flex items-center gap-4">
+          <div className="text-right">
+            <div className="text-sm text-gray-600 dark:text-slate-400">{t('header.level')} {userData.level}</div>
+            <div className="text-xs text-gray-500">{totalCharactersLearned} {t('header.charactersLearned')}</div>
+          </div>
+          <div className="w-10 h-10 bg-red-500 rounded-full flex items-center justify-center text-white">
+            <i className="fas fa-user text-lg"></i>
+          </div>
+          <div className="relative" ref={dropdownRef}>
+            <button
+              onClick={() => setIsLangDropdownOpen(!isLangDropdownOpen)}
+              className="w-10 h-10 rounded-full flex items-center justify-center text-gray-600 dark:text-slate-300 hover:bg-gray-100 dark:hover:bg-slate-700"
+            >
+              <GlobeIcon className="text-lg" />
+            </button>
+            {isLangDropdownOpen && (
+              <div className="absolute right-0 mt-2 w-48 bg-white dark:bg-slate-700 rounded-md shadow-lg py-1 z-10 border dark:border-slate-600">
+                <a
+                  href="#"
+                  onClick={(e) => { e.preventDefault(); handleSetLanguage('en'); }}
+                  className={`block px-4 py-2 text-sm ${language === 'en' ? 'bg-indigo-500 text-white' : 'text-gray-700 dark:text-slate-200 hover:bg-gray-100 dark:hover:bg-slate-600'}`}
+                >
+                  English
+                </a>
+                <a
+                  href="#"
+                  onClick={(e) => { e.preventDefault(); handleSetLanguage('id'); }}
+                  className={`block px-4 py-2 text-sm ${language === 'id' ? 'bg-indigo-500 text-white' : 'text-gray-700 dark:text-slate-200 hover:bg-gray-100 dark:hover:bg-slate-600'}`}
+                >
+                  Bahasa Indonesia
+                </a>
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+    </header>
+  );
 };
 
 export default Header;

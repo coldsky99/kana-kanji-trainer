@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { QuizQuestion, QuizType } from '../types';
+import { useLocalization } from '../hooks/useLocalization';
 
 interface QuizModalProps {
     questions: QuizQuestion[];
@@ -14,6 +15,7 @@ const QuizModal: React.FC<QuizModalProps> = ({ questions, onComplete, onClose, t
     const [isCorrect, setIsCorrect] = useState<boolean | null>(null);
     const [correctAnswers, setCorrectAnswers] = useState<string[]>([]);
     const [showResults, setShowResults] = useState(false);
+    const { t } = useLocalization();
 
     const currentQuestion = questions[currentQuestionIndex];
 
@@ -65,13 +67,13 @@ const QuizModal: React.FC<QuizModalProps> = ({ questions, onComplete, onClose, t
         return (
             <div className="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50">
                 <div className="bg-white dark:bg-slate-800 p-8 rounded-lg shadow-2xl w-full max-w-md text-center">
-                    <h2 className="text-2xl font-bold mb-4">Quiz Complete!</h2>
-                    <p className="text-lg mb-6">You scored {correctAnswers.length} out of {questions.length}!</p>
+                    <h2 className="text-2xl font-bold mb-4">{t('quiz.complete.title')}</h2>
+                    <p className="text-lg mb-6">{t('quiz.complete.score', { correct: correctAnswers.length, total: questions.length })}</p>
                     <button
                         onClick={handleFinish}
                         className="bg-indigo-600 text-white px-6 py-2 rounded-lg font-semibold hover:bg-indigo-700 transition-colors w-full"
                     >
-                        Finish
+                        {t('quiz.complete.finish')}
                     </button>
                 </div>
             </div>
@@ -82,12 +84,12 @@ const QuizModal: React.FC<QuizModalProps> = ({ questions, onComplete, onClose, t
         return (
              <div className="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50">
                 <div className="bg-white dark:bg-slate-800 p-8 rounded-lg shadow-2xl w-full max-w-md text-center">
-                    <h2 className="text-2xl font-bold mb-4">No questions available</h2>
+                    <h2 className="text-2xl font-bold mb-4">{t('quiz.noQuestions')}</h2>
                      <button
                         onClick={onClose}
                         className="bg-indigo-600 text-white px-6 py-2 rounded-lg font-semibold hover:bg-indigo-700 transition-colors w-full"
                     >
-                        Close
+                        {t('quiz.close')}
                     </button>
                 </div>
             </div>
@@ -97,16 +99,16 @@ const QuizModal: React.FC<QuizModalProps> = ({ questions, onComplete, onClose, t
     const getQuestionDisplay = () => {
         switch(currentQuestion.type) {
             case QuizType.KanjiToMeaning:
-                 return <div className="text-center"><div className="text-6xl md:text-8xl font-bold mb-2">{currentQuestion.question}</div><p className="text-slate-500">Choose the correct meaning.</p></div>;
+                 return <div className="text-center"><div className="text-6xl md:text-8xl font-bold mb-2">{currentQuestion.question}</div><p className="text-slate-500">{t('quiz.prompt.chooseMeaning')}</p></div>;
             case QuizType.KanjiToReading:
-                return <div className="text-center"><div className="text-6xl md:text-8xl font-bold mb-2">{currentQuestion.question}</div><p className="text-slate-500">Choose the correct {currentQuestion.reading || 'reading'}.</p></div>;
+                return <div className="text-center"><div className="text-6xl md:text-8xl font-bold mb-2">{currentQuestion.question}</div><p className="text-slate-500">{t('quiz.prompt.chooseReading', { reading: currentQuestion.reading || 'reading' })}</p></div>;
             case QuizType.KanaToRomaji:
-                return <div className="text-center"><div className="text-6xl md:text-8xl font-bold mb-2">{currentQuestion.question}</div><p className="text-slate-500">Choose the correct romaji.</p></div>;
+                return <div className="text-center"><div className="text-6xl md:text-8xl font-bold mb-2">{currentQuestion.question}</div><p className="text-slate-500">{t('quiz.prompt.chooseRomaji')}</p></div>;
             case QuizType.RomajiToKana:
                 return (
                     <div className="text-center">
                         <div className="text-4xl md:text-6xl font-bold mb-2">{currentQuestion.question}</div>
-                        <p className="text-slate-500">Choose the correct kana.</p>
+                        <p className="text-slate-500">{t('quiz.prompt.chooseKana')}</p>
                     </div>
                 );
             default:
@@ -160,7 +162,7 @@ const QuizModal: React.FC<QuizModalProps> = ({ questions, onComplete, onClose, t
                         onClick={handleNext}
                         className="bg-indigo-600 text-white w-full py-3 rounded-lg font-semibold hover:bg-indigo-700 transition-colors"
                     >
-                        {currentQuestionIndex < questions.length - 1 ? 'Next' : 'See Results'} (Enter)
+                        {currentQuestionIndex < questions.length - 1 ? t('quiz.next') : t('quiz.seeResults')} (Enter)
                     </button>
                 )}
             </div>

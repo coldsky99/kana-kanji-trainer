@@ -1,4 +1,5 @@
 
+
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import type { UserData, CharacterMastery } from '../types';
 import { XP_PER_LEVEL, ACHIEVEMENTS, SRS_LEVEL_DURATIONS_HOURS } from '../constants';
@@ -80,7 +81,7 @@ export const UserDataProvider: React.FC<{ children: React.ReactNode }> = ({ chil
 
             ACHIEVEMENTS.forEach(ach => {
                 if (!updatedData.achievements.includes(ach.id) && ach.condition(updatedData)) {
-                    newAchievements.push(ach.name);
+                    newAchievements.push(ach.nameKey);
                     updatedData.achievements.push(ach.id);
                 }
             });
