@@ -68,9 +68,9 @@ const Dashboard: React.FC<{ setView: (v: AppView) => void }> = ({ setView }) => 
     const calculateStreak = (dailyProgress: typeof userData.dailyProgress): number => {
         if (dailyProgress.length === 0) return 0;
 
-        // Fix: Explicitly type `a` and `b` as strings in the sort callback to prevent them from
-        // being inferred as `unknown`, which was causing errors when creating new Date objects.
-        const dates = [...new Set(dailyProgress.map(d => d.date))].sort((a: string, b: string) => new Date(b).getTime() - new Date(a).getTime());
+        // Fix: Removed explicit type annotations in the sort callback to allow TypeScript
+        // to correctly infer the type of the 'dates' array.
+        const dates = [...new Set(dailyProgress.map(d => d.date))].sort((a, b) => new Date(b).getTime() - new Date(a).getTime());
         const today = new Date();
         today.setHours(0, 0, 0, 0);
         const yesterday = new Date(today);
@@ -170,13 +170,13 @@ const Dashboard: React.FC<{ setView: (v: AppView) => void }> = ({ setView }) => 
             {/* Achievements Panel */}
             <section>
                 <h2 className="text-2xl sm:text-3xl font-bold mb-4">{t('dashboard.achievements.title')}</h2>
-                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4">
+                <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 lg:grid-cols-8 gap-4">
                     {earnedAchievements.length > 0 ? (
                         earnedAchievements.map(ach => (
                             <Tooltip key={ach.id} text={t(ach.descriptionKey as any)}>
-                                <div className="flex flex-col items-center text-center p-4 bg-white dark:bg-slate-800 rounded-lg shadow-md">
-                                    <div className="text-3xl text-yellow-500 mb-2">{ach.icon}</div>
-                                    <p className="text-xs font-semibold">{t(ach.nameKey as any)}</p>
+                                <div className="flex flex-col items-center justify-center text-center p-3 bg-white dark:bg-slate-800 rounded-lg shadow-md aspect-square transition-transform hover:scale-105">
+                                    <div className="text-4xl text-yellow-500 mb-2">{ach.icon}</div>
+                                    <p className="text-xs font-semibold leading-tight">{t(ach.nameKey as any)}</p>
                                 </div>
                             </Tooltip>
                         ))
