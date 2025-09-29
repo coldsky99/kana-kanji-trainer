@@ -65,3 +65,10 @@ export interface Achievement {
     icon: React.ReactNode;
     condition: (userData: UserData) => boolean;
 }
+
+export interface Kanji {
+  kanji: string;
+  meaning: string;
+  onyomi: string;
+  kunyomi: string;
+}

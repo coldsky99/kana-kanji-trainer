@@ -99,7 +99,7 @@ const QuizModal: React.FC<QuizModalProps> = ({ questions, onComplete, onClose, t
             case QuizType.KanjiToMeaning:
                  return <div className="text-center"><div className="text-6xl md:text-8xl font-bold mb-2">{currentQuestion.question}</div><p className="text-slate-500">Choose the correct meaning.</p></div>;
             case QuizType.KanjiToReading:
-                return <div className="text-center"><div className="text-6xl md:text-8xl font-bold mb-2">{currentQuestion.question}</div><p className="text-slate-500">Choose the correct reading.</p></div>;
+                return <div className="text-center"><div className="text-6xl md:text-8xl font-bold mb-2">{currentQuestion.question}</div><p className="text-slate-500">Choose the correct {currentQuestion.reading || 'reading'}.</p></div>;
             case QuizType.KanaToRomaji:
                 return <div className="text-center"><div className="text-6xl md:text-8xl font-bold mb-2">{currentQuestion.question}</div><p className="text-slate-500">Choose the correct romaji.</p></div>;
             case QuizType.RomajiToKana:
