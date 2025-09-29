@@ -1,5 +1,3 @@
-
-
 import React from 'react';
 
 export const TrophyIcon: React.FC<{ className?: string }> = ({ className }) => (
@@ -44,4 +42,8 @@ export const LockIcon: React.FC<{ className?: string }> = ({ className }) => (
 
 export const GlobeIcon: React.FC<{ className?: string }> = ({ className }) => (
     <i className={`fa-solid fa-globe ${className}`}></i>
+);
+
+export const QuestionMarkCircleIcon: React.FC<{ className?: string }> = ({ className }) => (
+    <i className={`fa-solid fa-circle-question ${className}`}></i>
 );

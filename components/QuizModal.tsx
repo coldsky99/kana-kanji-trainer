@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { QuizQuestion, QuizType } from '../types';
 import { useLocalization } from '../hooks/useLocalization';
@@ -68,7 +69,8 @@ const QuizModal: React.FC<QuizModalProps> = ({ questions, onComplete, onClose, t
             <div className="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50">
                 <div className="bg-white dark:bg-slate-800 p-8 rounded-lg shadow-2xl w-full max-w-md text-center">
                     <h2 className="text-2xl font-bold mb-4">{t('quiz.complete.title')}</h2>
-                    <p className="text-lg mb-6">{t('quiz.complete.score', { correct: correctAnswers.length, total: questions.length })}</p>
+                    {/* Fix: Convert numbers to strings for the translation function's replacement values. */}
+                    <p className="text-lg mb-6">{t('quiz.complete.score', { correct: String(correctAnswers.length), total: String(questions.length) })}</p>
                     <button
                         onClick={handleFinish}
                         className="bg-indigo-600 text-white px-6 py-2 rounded-lg font-semibold hover:bg-indigo-700 transition-colors w-full"

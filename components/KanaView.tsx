@@ -1,136 +1,207 @@
-
-
-import React, { useState, useMemo } from 'react';
-import { useUserData } from '../hooks/useUserData';
-import { useLocalization } from '../hooks/useLocalization';
-import type { KanaType as KanaEnumType, QuizQuestion } from '../types';
+import React, { useState, useMemo, useEffect } from 'react';
+import type { QuizQuestion } from '../types';
 import { KanaType, QuizType } from '../types';
 import { HIRAGANA_DATA, KATAKANA_DATA, XP_PER_LESSON_COMPLETE } from '../constants';
 import QuizModal from './QuizModal';
 import { SpeakerIcon } from './icons';
+import { useUserData } from '../hooks/useUserData';
+import { useLocalization } from '../hooks/useLocalization';
 
 interface KanaViewProps {
-    kanaType: KanaEnumType;
+    kanaType: KanaType;
 }
 
 const KanaView: React.FC<KanaViewProps> = ({ kanaType }) => {
+    const [isQuizVisible, setIsQuizVisible] = useState(false);
+    const [playingChar, setPlayingChar] = useState<string | null>(null);
+    const [japaneseVoice, setJapaneseVoice] = useState<SpeechSynthesisVoice | null>(null);
     const { userData, updateMastery, addXp } = useUserData();
     const { t } = useLocalization();
-    const [isQuizVisible, setIsQuizVisible] = useState(false);
-
+    
     const kanaData = kanaType === KanaType.Hiragana ? HIRAGANA_DATA : KATAKANA_DATA;
-    const masteryData = kanaType === KanaType.Hiragana ? userData.hiraganaMastery : userData.katakanaMastery;
     const masteryKey = kanaType === KanaType.Hiragana ? 'hiraganaMastery' : 'katakanaMastery';
+    
+    useEffect(() => {
+        const loadVoices = () => {
+            const voices = window.speechSynthesis.getVoices();
+            const jaVoice = voices.find(voice => voice.lang === 'ja-JP');
+            if (jaVoice) {
+                setJapaneseVoice(jaVoice);
+            } else {
+                 const jaVoiceAlt = voices.find(voice => voice.lang.startsWith('ja'));
+                 setJapaneseVoice(jaVoiceAlt || null);
+            }
+        };
 
+        // The voices list is loaded asynchronously.
+        loadVoices();
+        if (window.speechSynthesis.onvoiceschanged !== undefined) {
+            window.speechSynthesis.onvoiceschanged = loadVoices;
+        }
+    }, []);
+
+    const playAudio = (character: string) => {
+        if (!('speechSynthesis' in window)) {
+            console.error('Speech synthesis not supported in this browser.');
+            return;
+        }
+        
+        if (!japaneseVoice) {
+            console.warn('Japanese voice for text-to-speech not found or not loaded yet.');
+            return;
+        }
+
+        try {
+            // Cancel any ongoing speech to prevent overlap
+            window.speechSynthesis.cancel();
+
+            const utterance = new SpeechSynthesisUtterance(character);
+            utterance.voice = japaneseVoice;
+            utterance.lang = japaneseVoice.lang;
+            utterance.rate = 0.8;
+            
+            setPlayingChar(character);
+
+            utterance.onend = () => {
+                setPlayingChar(null);
+            };
+            
+            utterance.onerror = (event) => {
+                console.error('SpeechSynthesisUtterance.onerror:', event);
+                setPlayingChar(null);
+            };
+            
+            window.speechSynthesis.speak(utterance);
+        } catch (error) {
+            console.error('Error playing audio:', error);
+            setPlayingChar(null);
+        }
+    };
+    
     const quizQuestions = useMemo((): QuizQuestion[] => {
         const questions: QuizQuestion[] = [];
-        
-        // Kana to Romaji questions
-        kanaData.forEach(kana => {
-            const options = [kana.romaji];
+        if (kanaData.length < 4) return [];
+
+        // Generate 10 Kana-to-Romaji questions
+        const shuffledKana = [...kanaData].sort(() => 0.5 - Math.random());
+        for (let i = 0; i < Math.min(10, shuffledKana.length); i++) {
+            const char = shuffledKana[i];
+            const options = [char.romaji];
             while (options.length < 4) {
-                const randomKana = kanaData[Math.floor(Math.random() * kanaData.length)];
-                if (!options.includes(randomKana.romaji)) {
-                    options.push(randomKana.romaji);
+                const randomChar = kanaData[Math.floor(Math.random() * kanaData.length)];
+                if (!options.includes(randomChar.romaji)) {
+                    options.push(randomChar.romaji);
                 }
             }
             questions.push({
-                id: kana.kana,
+                id: `${char.kana}-to-romaji`,
                 type: QuizType.KanaToRomaji,
-                question: kana.kana,
-                options: options.sort(() => Math.random() - 0.5),
-                correctAnswer: kana.romaji,
+                question: char.kana,
+                options: options.sort(() => 0.5 - Math.random()),
+                correctAnswer: char.romaji,
             });
-        });
-
-        // Romaji to Kana questions
-         kanaData.forEach(kana => {
-            const options = [kana.kana];
+        }
+        
+        // Generate 10 Romaji-to-Kana questions
+        for (let i = 0; i < Math.min(10, shuffledKana.length); i++) {
+            const char = shuffledKana[i];
+            const options = [char.kana];
             while (options.length < 4) {
-                const randomKana = kanaData[Math.floor(Math.random() * kanaData.length)];
-                if (!options.includes(randomKana.kana)) {
-                    options.push(randomKana.kana);
+                const randomChar = kanaData[Math.floor(Math.random() * kanaData.length)];
+                if (!options.includes(randomChar.kana)) {
+                    options.push(randomChar.kana);
                 }
             }
             questions.push({
-                id: kana.romaji,
+                id: `${char.romaji}-to-kana`,
                 type: QuizType.RomajiToKana,
-                question: kana.romaji,
-                options: options.sort(() => Math.random() - 0.5),
-                correctAnswer: kana.kana,
+                question: char.romaji,
+                options: options.sort(() => 0.5 - Math.random()),
+                correctAnswer: char.kana,
             });
-        });
-
-        return questions.sort(() => Math.random() - 0.5);
+        }
+        
+        return questions.sort(() => 0.5 - Math.random());
     }, [kanaData]);
     
     const handleQuizComplete = (correctAnswers: string[]) => {
         setIsQuizVisible(false);
-        const incorrectAnswers = quizQuestions
-            .filter(q => !correctAnswers.includes(q.id))
-            .map(q => q.type === QuizType.KanaToRomaji ? q.question : q.correctAnswer);
+        const answeredQuestions = new Set<string>();
 
-        correctAnswers.forEach(id => {
-            const question = quizQuestions.find(q => q.id === id);
-            const kana = question?.type === QuizType.KanaToRomaji ? question.question : question?.correctAnswer;
-            if (kana) updateMastery(masteryKey, kana, true);
+        quizQuestions.forEach(q => {
+            const isCorrect = correctAnswers.includes(q.id);
+            const character = q.type === QuizType.KanaToRomaji ? q.question : q.correctAnswer;
+            
+            if (!answeredQuestions.has(character)) {
+                 updateMastery(masteryKey, character, isCorrect);
+                 answeredQuestions.add(character);
+            }
         });
 
-        incorrectAnswers.forEach(kana => updateMastery(masteryKey, kana, false));
-
-        if (correctAnswers.length > incorrectAnswers.length) {
+        if (correctAnswers.length > (quizQuestions.length - correctAnswers.length)) {
             addXp(XP_PER_LESSON_COMPLETE);
         }
     };
-
-    const speak = (text: string) => {
-        const utterance = new SpeechSynthesisUtterance(text);
-        utterance.lang = 'ja-JP';
-        speechSynthesis.speak(utterance);
+    
+    const getMasteryLevel = (character: string): number => {
+        return userData[masteryKey]?.[character]?.level || 0;
     };
-
+    
     return (
         <div className="space-y-6">
             <div className="flex justify-between items-center">
-                <h1 className="text-3xl font-bold capitalize">{kanaType}</h1>
-                <button 
+                <h1 className="text-3xl font-bold">
+                    {kanaType === 'hiragana' ? t('dashboard.module.learnHiragana.title') : t('dashboard.module.learnKatakana.title')}
+                </h1>
+                <button
                     onClick={() => setIsQuizVisible(true)}
                     className="bg-indigo-600 text-white px-6 py-2 rounded-lg font-semibold hover:bg-indigo-700 transition-colors"
+                    disabled={quizQuestions.length === 0}
                 >
                     {t('kanaView.startQuiz')}
                 </button>
             </div>
             
-            <div className="grid grid-cols-5 sm:grid-cols-7 md:grid-cols-10 gap-2 md:gap-4">
-                {kanaData.map(kana => {
-                    const mastery = masteryData[kana.kana]?.level || 0;
-                    const colors = [
-                        'bg-slate-200 dark:bg-slate-700',
-                        'bg-red-200 dark:bg-red-800',
-                        'bg-orange-200 dark:bg-orange-800',
-                        'bg-yellow-200 dark:bg-yellow-800',
-                        'bg-lime-200 dark:bg-lime-800',
-                        'bg-green-200 dark:bg-green-800',
-                    ];
+            <div className="grid grid-cols-5 sm:grid-cols-6 md:grid-cols-8 lg:grid-cols-10 gap-3">
+                {kanaData.map((character) => {
+                    const masteryLevel = getMasteryLevel(character.kana);
+                    const isPlaying = playingChar === character.kana;
 
                     return (
-                        <div key={kana.kana} className={`relative rounded-lg p-2 flex flex-col items-center justify-center aspect-square transition-all duration-300 ${colors[mastery]}`}>
-                            <div className="text-4xl">{kana.kana}</div>
-                            <div className="text-sm text-slate-600 dark:text-slate-300">{kana.romaji}</div>
-                            <button onClick={() => speak(kana.kana)} className="absolute top-1 right-1 text-slate-500 hover:text-indigo-500 text-xs">
-                                <SpeakerIcon />
-                            </button>
+                        <div
+                            key={character.kana}
+                            onClick={() => playAudio(character.kana)}
+                            onTouchStart={(e) => { e.preventDefault(); playAudio(character.kana); }}
+                            className={`relative bg-white dark:bg-slate-800 rounded-lg shadow p-2 text-center cursor-pointer transition-all duration-200 aspect-square flex flex-col justify-center items-center ${isPlaying ? 'ring-2 ring-indigo-500 scale-110' : 'hover:scale-105'}`}
+                        >
+                            <div className="absolute top-1 right-1 text-slate-300 dark:text-slate-600">
+                                <SpeakerIcon className="w-3 h-3" />
+                            </div>
+                            
+                            <div className="text-4xl font-bold text-slate-800 dark:text-slate-100">
+                                {character.kana}
+                            </div>
+                            <div className="text-sm text-slate-500 dark:text-slate-400">
+                                {character.romaji}
+                            </div>
+                            
+                            <div className="absolute bottom-1 w-[calc(100%-8px)] h-1 bg-slate-200 dark:bg-slate-700 rounded-full">
+                                <div 
+                                    className="h-full rounded-full bg-indigo-500 transition-all duration-300"
+                                    style={{ width: `${(masteryLevel / 8) * 100}%` }}
+                                ></div>
+                            </div>
                         </div>
                     );
                 })}
             </div>
-
+            
             {isQuizVisible && (
-                <QuizModal 
-                    questions={quizQuestions} 
-                    onComplete={handleQuizComplete} 
+                <QuizModal
+                    questions={quizQuestions}
+                    onComplete={handleQuizComplete}
                     onClose={() => setIsQuizVisible(false)}
-                    title={t('kanaView.quizTitle', { kanaType: kanaType.charAt(0).toUpperCase() + kanaType.slice(1)})}
+                    title={t('kanaView.quizTitle', { kanaType: kanaType.charAt(0).toUpperCase() + kanaType.slice(1) })}
                 />
             )}
         </div>

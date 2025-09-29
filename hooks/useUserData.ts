@@ -1,5 +1,3 @@
-
-
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import type { UserData, CharacterMastery } from '../types';
 import { XP_PER_LEVEL, ACHIEVEMENTS, SRS_LEVEL_DURATIONS_HOURS } from '../constants';
@@ -14,6 +12,7 @@ const initialUserData: UserData = {
     sentenceMastery: {},
     achievements: [],
     dailyProgress: [],
+    hasCompletedOnboarding: false,
 };
 
 interface UserDataContextType {
@@ -21,6 +20,7 @@ interface UserDataContextType {
     addXp: (amount: number) => string[];
     updateMastery: (category: keyof UserData, key: string, correct: boolean) => void;
     isLoading: boolean;
+    completeOnboarding: () => void;
 }
 
 const UserDataContext = createContext<UserDataContextType | undefined>(undefined);
@@ -33,7 +33,8 @@ export const UserDataProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         try {
             const savedData = localStorage.getItem('nihongoMasterUserData');
             if (savedData) {
-                setUserData(JSON.parse(savedData));
+                const parsedData = JSON.parse(savedData);
+                setUserData({ ...initialUserData, ...parsedData });
             }
         } catch (error) {
             console.error("Failed to load user data from localStorage", error);
@@ -121,10 +122,14 @@ export const UserDataProvider: React.FC<{ children: React.ReactNode }> = ({ chil
             });
         }
     }, []);
+    
+    const completeOnboarding = useCallback(() => {
+        setUserData(prevData => ({ ...prevData, hasCompletedOnboarding: true }));
+    }, []);
 
 
     // Fix: Replaced JSX with React.createElement because .ts files cannot contain JSX, which was causing parsing errors.
-    return React.createElement(UserDataContext.Provider, { value: { userData, addXp, updateMastery, isLoading } }, children);
+    return React.createElement(UserDataContext.Provider, { value: { userData, addXp, updateMastery, isLoading, completeOnboarding } }, children);
 };
 
 export const useUserData = () => {

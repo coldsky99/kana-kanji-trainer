@@ -1,3 +1,4 @@
+
 import React, { useState, useRef, useEffect } from 'react';
 import { useUserData } from '../hooks/useUserData';
 import { useLocalization } from '../hooks/useLocalization';
@@ -11,7 +12,8 @@ interface HeaderProps {
 
 const Header: React.FC<HeaderProps> = ({ currentView, setView }) => {
   const { userData } = useUserData();
-  const { language, setLanguage, t } = useLocalization();
+  // Fix: useLocalization returns `changeLanguage`, not `setLanguage`.
+  const { language, changeLanguage, t } = useLocalization();
   const [isLangDropdownOpen, setIsLangDropdownOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
@@ -31,7 +33,8 @@ const Header: React.FC<HeaderProps> = ({ currentView, setView }) => {
   }, [dropdownRef]);
 
   const handleSetLanguage = (lang: 'en' | 'id') => {
-    setLanguage(lang);
+    // Fix: Call `changeLanguage` instead of `setLanguage`.
+    changeLanguage(lang);
     setIsLangDropdownOpen(false);
   }
 
@@ -66,7 +69,7 @@ const Header: React.FC<HeaderProps> = ({ currentView, setView }) => {
         <div className="flex items-center gap-4">
           <div className="text-right">
             <div className="text-sm text-gray-600 dark:text-slate-400">{t('header.level')} {userData.level}</div>
-            <div className="text-xs text-gray-500">{totalCharactersLearned} {t('header.charactersLearned')}</div>
+            <div className="text-xs text-gray-500">{totalCharactersLearned} {t('header.characters')}</div>
           </div>
           <div className="w-10 h-10 bg-red-500 rounded-full flex items-center justify-center text-white">
             <i className="fas fa-user text-lg"></i>

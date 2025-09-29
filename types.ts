@@ -46,6 +46,7 @@ export interface UserData {
     sentenceMastery: CharacterMastery;
     achievements: string[];
     dailyProgress: DailyProgress[];
+    hasCompletedOnboarding: boolean;
 }
 
 export interface QuizQuestion {

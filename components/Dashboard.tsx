@@ -1,12 +1,13 @@
 
-
 import React from 'react';
 import { useUserData } from '../hooks/useUserData';
-import { useLocalization } from '../hooks/useLocalization';
+// Fix: Import TranslationKey for type casting.
+import { useLocalization, type TranslationKey } from '../hooks/useLocalization';
 import { AppView } from '../types';
 import { HIRAGANA_DATA, KATAKANA_DATA, KANJI_DATA, ACHIEVEMENTS } from '../constants';
-import { BookOpenIcon, StarIcon, TrophyIcon, LanguageIcon, LockIcon } from './icons';
-import { BarChart, Bar, XAxis, YAxis, Tooltip, Legend, ResponsiveContainer } from 'recharts';
+import { BookOpenIcon, LanguageIcon, LockIcon, QuestionMarkCircleIcon } from './icons';
+import Tooltip from './Tooltip';
+import { BarChart, Bar, XAxis, YAxis, Tooltip as RechartsTooltip, Legend, ResponsiveContainer } from 'recharts';
 
 interface DashboardProps {
     setView: (view: AppView) => void;
@@ -60,15 +61,15 @@ const Dashboard: React.FC<DashboardProps> = ({ setView }) => {
             
             {/* Stats Grid */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-                <StatCard title={t('dashboard.hiraganaLearned')} value={`${hiraganaLearned} / ${HIRAGANA_DATA.length}`} icon={<LanguageIcon className="text-pink-500" />} />
-                <StatCard title={t('dashboard.katakanaLearned')} value={`${katakanaLearned} / ${KATAKANA_DATA.length}`} icon={<LanguageIcon className="text-blue-500" />} />
-                <StatCard title={t('dashboard.kanjiLearned')} value={`${kanjiLearned} / ${KANJI_DATA.length}`} icon={<BookOpenIcon className="text-green-500" />} />
-                <StatCard title={t('dashboard.achievements')} value={`${userData.achievements.length} / ${ACHIEVEMENTS.length}`} icon={<TrophyIcon className="text-yellow-500" />} />
+                <StatCard title={t('dashboard.hiragana')} value={`${hiraganaLearned} / ${HIRAGANA_DATA.length}`} icon={<LanguageIcon className="text-pink-500" />} />
+                <StatCard title={t('dashboard.katakana')} value={`${katakanaLearned} / ${KATAKANA_DATA.length}`} icon={<LanguageIcon className="text-blue-500" />} />
+                <StatCard title={t('dashboard.kanji')} value={`${kanjiLearned} / ${KANJI_DATA.length}`} icon={<BookOpenIcon className="text-green-500" />} />
+                <StatCard title={t('dashboard.achievements')} value={`${userData.achievements.length} / ${ACHIEVEMENTS.length}`} icon={<i className="fa-solid fa-trophy text-yellow-500"></i>} />
             </div>
 
             {/* Learning Modules */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                <ModuleCard title={t('dashboard.module.learnHiragana.title')} description={t('dashboard.module.learnHiragana.description')} onClick={() => setView(AppView.Hiragana)} />
+                <ModuleCard title={t('dashboard.module.learnHiragana.title')} description={t('dashboard.module.learnHiragana.description')} onClick={() => setView(AppView.Hiragana)} isHighlighted={!userData.hasCompletedOnboarding && hiraganaLearned === 0} />
                 <ModuleCard title={t('dashboard.module.learnKatakana.title')} description={t('dashboard.module.learnKatakana.description')} onClick={() => setView(AppView.Katakana)} />
                 <ModuleCard title={t('dashboard.module.learnKanji.title')} description={t('dashboard.module.learnKanji.description')} onClick={() => setView(AppView.Kanji)} />
                 <ModuleCard 
@@ -96,7 +97,7 @@ const Dashboard: React.FC<DashboardProps> = ({ setView }) => {
                             <BarChart data={chartData}>
                                 <XAxis dataKey="name" stroke="rgb(100 116 139)" />
                                 <YAxis stroke="rgb(100 116 139)" />
-                                <Tooltip contentStyle={{ backgroundColor: 'rgb(30 41 59)', border: 'none', borderRadius: '0.5rem' }} />
+                                <RechartsTooltip contentStyle={{ backgroundColor: 'rgb(30 41 59)', border: 'none', borderRadius: '0.5rem' }} />
                                 <Legend />
                                 <Bar dataKey="xp" fill="rgb(99 102 241)" />
                             </BarChart>
@@ -114,8 +115,10 @@ const Dashboard: React.FC<DashboardProps> = ({ setView }) => {
                                     {ach.icon}
                                 </div>
                                 <div>
-                                    <p className="font-semibold">{t(ach.nameKey)}</p>
-                                    <p className="text-sm text-slate-600 dark:text-slate-400">{t(ach.descriptionKey)}</p>
+                                    {/* Fix: Cast ach.nameKey to TranslationKey to match the 't' function's expected argument type. */}
+                                    <p className="font-semibold">{t(ach.nameKey as TranslationKey)}</p>
+                                    {/* Fix: Cast ach.descriptionKey to TranslationKey to match the 't' function's expected argument type. */}
+                                    <p className="text-sm text-slate-600 dark:text-slate-400">{t(ach.descriptionKey as TranslationKey)}</p>
                                 </div>
                             </div>
                         ))}
@@ -142,14 +145,16 @@ const ModuleCard: React.FC<{
     onClick: () => void;
     isLocked?: boolean;
     progress?: number;
-}> = ({ title, description, onClick, isLocked = false, progress = 0 }) => {
+    isHighlighted?: boolean;
+}> = ({ title, description, onClick, isLocked = false, progress = 0, isHighlighted = false }) => {
     const { t } = useLocalization();
     const lockedClasses = "opacity-70 cursor-not-allowed";
     const unlockedClasses = "hover:shadow-xl hover:scale-105 transition-transform duration-200 cursor-pointer";
+    const highlightedClasses = isHighlighted ? "animate-pulse border-2 border-indigo-400" : "";
 
     return (
         <div
-            className={`bg-white dark:bg-slate-800 p-6 rounded-xl shadow-lg relative overflow-hidden ${isLocked ? lockedClasses : unlockedClasses}`}
+            className={`bg-white dark:bg-slate-800 p-6 rounded-xl shadow-lg relative overflow-hidden ${isLocked ? lockedClasses : unlockedClasses} ${highlightedClasses}`}
             onClick={isLocked ? undefined : onClick}
         >
             <h3 className={`text-lg font-semibold mb-2 ${isLocked ? 'text-slate-500 dark:text-slate-400' : 'text-indigo-600 dark:text-indigo-400'}`}>{title}</h3>
@@ -163,7 +168,10 @@ const ModuleCard: React.FC<{
                     <div className="w-full bg-slate-200 dark:bg-slate-700 rounded-full h-2">
                         <div className="bg-indigo-500 h-2 rounded-full" style={{ width: `${progress}%` }}></div>
                     </div>
-                    <div className="absolute top-4 right-4 text-slate-400 dark:text-slate-500">
+                    <div className="absolute top-4 right-4 text-slate-400 dark:text-slate-500 flex items-center gap-2">
+                       <Tooltip text={t(title === t('dashboard.module.wordBuilder.title') ? 'tooltips.wordsLocked' : 'tooltips.sentencesLocked')}>
+                            <QuestionMarkCircleIcon className="text-base cursor-help"/>
+                       </Tooltip>
                        <LockIcon className="text-lg" />
                     </div>
                 </div>
