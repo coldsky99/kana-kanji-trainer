@@ -122,11 +122,11 @@ const KanjiView: React.FC = () => {
     
     return (
         <div className="space-y-6">
-            <div className="flex justify-between items-center">
-                <h1 className="text-3xl font-bold">{t('kanjiView.title')}</h1>
+            <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4">
+                <h1 className="text-2xl sm:text-3xl font-bold text-center sm:text-left">{t('kanjiView.title')}</h1>
                 <button
                     onClick={() => setIsQuizVisible(true)}
-                    className="bg-indigo-600 text-white px-6 py-2 rounded-lg font-semibold hover:bg-indigo-700 transition-colors"
+                    className="bg-indigo-600 text-white px-5 py-2.5 rounded-lg font-semibold hover:bg-indigo-700 transition-colors w-full sm:w-auto"
                     disabled={quizQuestions.length === 0}
                 >
                     {t('kanjiView.startQuiz')}
@@ -141,7 +141,7 @@ const KanjiView: React.FC = () => {
                             <Flashcard
                                 front={
                                     <div className="flex flex-col items-center justify-center w-full h-full">
-                                        <p className="text-7xl lg:text-8xl">{kanjiData.kanji}</p>
+                                        <p className="text-6xl sm:text-7xl lg:text-8xl">{kanjiData.kanji}</p>
                                         <div className="absolute bottom-2 w-full px-2">
                                             <div className="w-full bg-slate-200 dark:bg-slate-800 rounded-full h-1.5">
                                                 <div className="bg-indigo-500 h-1.5 rounded-full" style={{ width: `${(mastery / 5) * 100}%` }}></div>

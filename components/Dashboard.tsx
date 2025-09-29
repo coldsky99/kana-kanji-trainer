@@ -68,7 +68,9 @@ const Dashboard: React.FC<{ setView: (v: AppView) => void }> = ({ setView }) => 
     const calculateStreak = (dailyProgress: typeof userData.dailyProgress): number => {
         if (dailyProgress.length === 0) return 0;
 
-        const dates = [...new Set(dailyProgress.map(d => d.date))].sort((a,b) => new Date(b).getTime() - new Date(a).getTime());
+        // Fix: Explicitly type `a` and `b` as strings in the sort callback to prevent them from
+        // being inferred as `unknown`, which was causing errors when creating new Date objects.
+        const dates = [...new Set(dailyProgress.map(d => d.date))].sort((a: string, b: string) => new Date(b).getTime() - new Date(a).getTime());
         const today = new Date();
         today.setHours(0, 0, 0, 0);
         const yesterday = new Date(today);
@@ -106,7 +108,7 @@ const Dashboard: React.FC<{ setView: (v: AppView) => void }> = ({ setView }) => 
         <div className="space-y-8">
             {/* Stats Panel */}
             <section>
-                <h2 className="text-2xl font-bold mb-4">{t('dashboard.welcome')}</h2>
+                <h2 className="text-2xl sm:text-3xl font-bold mb-4">{t('dashboard.welcome')}</h2>
                 <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
                     <StatCard label={t('dashboard.stats.level')} value={userData.level} icon={<TrophyIcon />} />
                     <StatCard label={t('dashboard.stats.xp')} value={`${userData.xp} / ${XP_PER_LEVEL}`} icon={<StarIcon />} />
@@ -123,7 +125,7 @@ const Dashboard: React.FC<{ setView: (v: AppView) => void }> = ({ setView }) => 
 
             {/* Learning Modules */}
             <section>
-                <h2 className="text-2xl font-bold mb-4">{t('dashboard.modules')}</h2>
+                <h2 className="text-2xl sm:text-3xl font-bold mb-4">{t('dashboard.modules')}</h2>
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                     <ModuleCard 
                         title={t('dashboard.module.learnHiragana.title')}
@@ -167,7 +169,7 @@ const Dashboard: React.FC<{ setView: (v: AppView) => void }> = ({ setView }) => 
 
             {/* Achievements Panel */}
             <section>
-                <h2 className="text-2xl font-bold mb-4">{t('dashboard.achievements.title')}</h2>
+                <h2 className="text-2xl sm:text-3xl font-bold mb-4">{t('dashboard.achievements.title')}</h2>
                 <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4">
                     {earnedAchievements.length > 0 ? (
                         earnedAchievements.map(ach => (

@@ -39,7 +39,7 @@ const Header: React.FC<HeaderProps> = ({ currentView, setView }) => {
   }
 
   return (
-    <header className="sticky top-0 z-50 bg-white dark:bg-slate-800 shadow-md dark:border-b dark:border-slate-700 px-6 py-4">
+    <header className="sticky top-0 z-50 bg-white dark:bg-slate-800 shadow-md dark:border-b dark:border-slate-700 px-4 sm:px-6 py-3">
       <div className="flex items-center justify-between max-w-7xl mx-auto">
         <div className="flex items-center gap-3 cursor-pointer" onClick={() => setView(AppView.Dashboard)}>
           <div className="flex items-center gap-2">
@@ -49,11 +49,11 @@ const Header: React.FC<HeaderProps> = ({ currentView, setView }) => {
                 </div>
               </div>
             </div>
-            <h1 className="text-2xl font-bold text-gray-800 dark:text-slate-100">Nihongo Master</h1>
+            <h1 className="text-xl sm:text-2xl font-bold text-gray-800 dark:text-slate-100">Nihongo Master</h1>
           </div>
         </div>
         
-        <nav className="flex items-center gap-4">
+        <nav className="hidden md:flex items-center gap-4">
           <button
             onClick={() => setView(AppView.Dashboard)}
             className={`px-4 py-2 rounded-lg font-medium transition-colors ${
@@ -66,8 +66,8 @@ const Header: React.FC<HeaderProps> = ({ currentView, setView }) => {
           </button>
         </nav>
         
-        <div className="flex items-center gap-4">
-          <div className="text-right">
+        <div className="flex items-center gap-2 sm:gap-4">
+          <div className="text-right hidden sm:block">
             <div className="text-sm text-gray-600 dark:text-slate-400">{t('header.level')} {userData.level}</div>
             <div className="text-xs text-gray-500">{totalCharactersLearned} {t('header.characters')}</div>
           </div>
