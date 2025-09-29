@@ -68,9 +68,9 @@ const Dashboard: React.FC<{ setView: (v: AppView) => void }> = ({ setView }) => 
     const calculateStreak = (dailyProgress: typeof userData.dailyProgress): number => {
         if (dailyProgress.length === 0) return 0;
 
-        // Fix: Removed explicit type annotations in the sort callback to allow TypeScript
-        // to correctly infer the type of the 'dates' array.
-        const dates = [...new Set(dailyProgress.map(d => d.date))].sort((a, b) => new Date(b).getTime() - new Date(a).getTime());
+        // Fix: Added explicit type annotations to the sort callback parameters to ensure
+        // correct type inference for the `dates` array.
+        const dates = [...new Set(dailyProgress.map(d => d.date))].sort((a: string, b: string) => new Date(b).getTime() - new Date(a).getTime());
         const today = new Date();
         today.setHours(0, 0, 0, 0);
         const yesterday = new Date(today);
@@ -174,8 +174,8 @@ const Dashboard: React.FC<{ setView: (v: AppView) => void }> = ({ setView }) => 
                     {earnedAchievements.length > 0 ? (
                         earnedAchievements.map(ach => (
                             <Tooltip key={ach.id} text={t(ach.descriptionKey as any)}>
-                                <div className="flex flex-col items-center justify-center text-center p-3 bg-white dark:bg-slate-800 rounded-lg shadow-md aspect-square transition-transform hover:scale-105">
-                                    <div className="text-4xl text-yellow-500 mb-2">{ach.icon}</div>
+                                <div className="flex flex-col items-center justify-between text-center p-2 sm:p-3 bg-white dark:bg-slate-800 rounded-lg shadow-md aspect-square transition-transform hover:scale-105">
+                                    <div className="text-3xl sm:text-4xl text-yellow-500">{ach.icon}</div>
                                     <p className="text-xs font-semibold leading-tight">{t(ach.nameKey as any)}</p>
                                 </div>
                             </Tooltip>
