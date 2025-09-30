@@ -52,3 +52,7 @@ export const QuestionMarkCircleIcon: React.FC<{ className?: string }> = ({ class
 export const InfoIcon: React.FC<{ className?: string }> = ({ className }) => (
     <i className={`fa-solid fa-circle-info ${className}`}></i>
 );
+
+export const UserIcon: React.FC<{ className?: string }> = ({ className }) => (
+    <i className={`fa-solid fa-user ${className}`}></i>
+);

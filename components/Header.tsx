@@ -2,7 +2,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import { useUserData } from '../hooks/useUserData';
 import { useLocalization } from '../hooks/useLocalization';
 import { AppView } from '../types';
-import { GlobeIcon } from './icons';
+import { GlobeIcon, UserIcon } from './icons';
 
 interface HeaderProps {
   currentView: AppView;
@@ -68,9 +68,9 @@ const Header: React.FC<HeaderProps> = ({ currentView, setView }) => {
             <div className="text-sm text-gray-600 dark:text-slate-400">{t('header.level')} {userData?.level}</div>
             <div className="text-xs text-gray-500">{totalCharactersLearned} {t('header.characters')}</div>
           </div>
-           <div className="w-10 h-10 rounded-full flex items-center justify-center bg-slate-200 dark:bg-slate-700">
-              <img src={userData?.photoURL || ''} alt={userData?.displayName || 'User'} className="w-10 h-10 rounded-full object-cover" />
-            </div>
+          <div className="w-10 h-10 rounded-full flex items-center justify-center bg-slate-200 dark:bg-slate-700 text-slate-500 dark:text-slate-400">
+            <UserIcon className="text-xl" />
+          </div>
           <div className="relative" ref={langDropdownRef}>
             <button
               onClick={() => setIsLangDropdownOpen(!isLangDropdownOpen)}

@@ -6,7 +6,7 @@ import { useLocalization } from '../hooks/useLocalization';
 import { AppView } from '../types';
 import type { MasteryItem } from '../types';
 import { XP_PER_LEVEL, ACHIEVEMENTS, HIRAGANA_DATA, KATAKANA_DATA, KANJI_DATA } from '../constants';
-import { BookOpenIcon, StarIcon, LockIcon } from './icons';
+import { BookOpenIcon, StarIcon, LockIcon, UserIcon } from './icons';
 import Tooltip from './Tooltip';
 import type { TranslationKey } from '../hooks/useLocalization';
 
@@ -52,7 +52,9 @@ const Dashboard: React.FC<DashboardProps> = ({ setView }) => {
         </h1>
         <div className="flex items-center gap-6 mt-4">
           <div className="flex-shrink-0">
-            <img className="h-16 w-16 rounded-full object-cover border-4 border-indigo-200 dark:border-indigo-700 shadow-sm" src={userData.photoURL} alt={userData.displayName} />
+            <div className="h-16 w-16 rounded-full border-4 border-indigo-200 dark:border-indigo-700 shadow-sm flex items-center justify-center bg-slate-200 dark:bg-slate-700 text-slate-500 dark:text-slate-400">
+              <UserIcon className="text-3xl" />
+            </div>
           </div>
           <div className="flex-grow">
             <div className="flex justify-between items-center mb-1">

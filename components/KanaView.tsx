@@ -140,6 +140,14 @@ const KanaView: React.FC<KanaViewProps> = ({ kanaType }) => {
     const getMasteryLevel = (character: string): number => {
         return userData[masteryKey]?.[character]?.level || 0;
     };
+
+    const getMasteryColor = (level: number): string => {
+        if (level === 0) return 'bg-transparent';
+        if (level <= 2) return 'bg-red-500';
+        if (level <= 4) return 'bg-yellow-500';
+        if (level <= 6) return 'bg-green-400';
+        return 'bg-indigo-500';
+    };
     
     return (
         <div className="space-y-6">
@@ -159,6 +167,7 @@ const KanaView: React.FC<KanaViewProps> = ({ kanaType }) => {
             <div className="grid grid-cols-5 sm:grid-cols-8 lg:grid-cols-10 xl:grid-cols-12 gap-2 sm:gap-3 md:gap-4">
                 {kanaData.map((character) => {
                     const masteryLevel = getMasteryLevel(character.kana);
+                    const masteryColor = getMasteryColor(masteryLevel);
                     const isPlaying = playingChar === character.kana;
 
                     return (
@@ -179,9 +188,9 @@ const KanaView: React.FC<KanaViewProps> = ({ kanaType }) => {
                                 {character.romaji}
                             </div>
                             
-                            <div className="absolute bottom-1.5 w-[calc(100%-12px)] h-1.5 bg-slate-200 dark:bg-slate-700 rounded-full overflow-hidden">
+                            <div className="absolute bottom-2 w-[calc(100%-1rem)] h-2 bg-slate-200 dark:bg-slate-700 rounded-full overflow-hidden">
                                 <div 
-                                    className="h-full rounded-full bg-indigo-500 transition-all duration-300"
+                                    className={`h-full rounded-full ${masteryColor} transition-all duration-300`}
                                     style={{ width: `${(masteryLevel / 8) * 100}%` }}
                                 ></div>
                             </div>
