@@ -68,15 +68,15 @@ const Dashboard: React.FC<{ setView: (v: AppView) => void }> = ({ setView }) => 
     const calculateStreak = (dailyProgress: typeof userData.dailyProgress): number => {
         if (dailyProgress.length === 0) return 0;
 
-        // Fix: Explicitly cast date to string to ensure correct type inference for `dates` array.
+        // Fix: Cast arguments to `new Date` to string to handle `unknown` type from `any[]`.
         // This prevents errors when `dailyProgress` is inferred as `any[]` from localStorage.
-        const dates = [...new Set(dailyProgress.map(d => String(d.date)))].sort((a, b) => new Date(b).getTime() - new Date(a).getTime());
+        const dates = [...new Set(dailyProgress.map(d => String(d.date)))].sort((a, b) => new Date(b as string).getTime() - new Date(a as string).getTime());
         const today = new Date();
         today.setHours(0, 0, 0, 0);
         const yesterday = new Date(today);
         yesterday.setDate(yesterday.getDate() - 1);
         
-        let lastDate = new Date(dates[0]);
+        let lastDate = new Date(dates[0] as string);
         lastDate.setHours(0, 0, 0, 0);
 
         if (lastDate.getTime() !== today.getTime() && lastDate.getTime() !== yesterday.getTime()) {
@@ -85,7 +85,7 @@ const Dashboard: React.FC<{ setView: (v: AppView) => void }> = ({ setView }) => 
 
         let streak = 1;
         for (let i = 1; i < dates.length; i++) {
-            const currentDate = new Date(dates[i]);
+            const currentDate = new Date(dates[i] as string);
             currentDate.setHours(0, 0, 0, 0);
             
             const expectedPreviousDate = new Date(lastDate);
@@ -175,9 +175,13 @@ const Dashboard: React.FC<{ setView: (v: AppView) => void }> = ({ setView }) => 
                         earnedAchievements.map(ach => (
                             <Tooltip key={ach.id} text={t(ach.descriptionKey as any)}>
                                 <div className="aspect-square">
-                                    <div className="w-full h-full flex flex-col items-center justify-between text-center p-2 sm:p-3 bg-white dark:bg-slate-800 rounded-lg shadow-md transition-transform hover:scale-105">
-                                        <div className="text-3xl sm:text-4xl text-yellow-500">{ach.icon}</div>
-                                        <p className="text-xs font-semibold leading-tight">{t(ach.nameKey as any)}</p>
+                                    <div className="w-full h-full flex flex-col items-center text-center p-2 sm:p-3 bg-white dark:bg-slate-800 rounded-lg shadow-md transition-transform hover:scale-105">
+                                        <div className="flex-1 flex items-center justify-center text-3xl sm:text-4xl text-yellow-500">
+                                            {ach.icon}
+                                        </div>
+                                        <p className="text-xs font-semibold leading-tight h-8 shrink-0 flex items-center justify-center">
+                                            {t(ach.nameKey as any)}
+                                        </p>
                                     </div>
                                 </div>
                             </Tooltip>
