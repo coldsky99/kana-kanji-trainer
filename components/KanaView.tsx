@@ -175,24 +175,28 @@ const KanaView: React.FC<KanaViewProps> = ({ kanaType }) => {
                             key={character.kana}
                             onClick={() => playAudio(character.kana)}
                             onTouchStart={(e) => { e.preventDefault(); playAudio(character.kana); }}
-                            className={`relative bg-white dark:bg-slate-800 rounded-lg shadow p-1 sm:p-2 text-center cursor-pointer transition-all duration-200 aspect-square flex flex-col justify-center items-center ${isPlaying ? 'ring-2 ring-indigo-500 scale-110 z-10' : 'hover:scale-105'}`}
+                            className={`relative bg-white dark:bg-slate-800 rounded-lg shadow p-2 text-center cursor-pointer transition-all duration-200 aspect-square flex flex-col justify-evenly items-center ${isPlaying ? 'ring-2 ring-indigo-500 scale-110 z-10' : 'hover:scale-105'}`}
                         >
-                            <div className="absolute top-1.5 right-1.5 text-slate-300 dark:text-slate-600">
+                            <div className="absolute top-1.5 right-1.5 text-slate-400 dark:text-slate-500">
                                 <SpeakerIcon className="w-3.5 h-3.5" />
                             </div>
                             
-                            <div className="text-3xl sm:text-4xl font-bold text-slate-800 dark:text-slate-100">
-                                {character.kana}
-                            </div>
-                            <div className="text-xs sm:text-sm text-slate-500 dark:text-slate-400 mt-1">
-                                {character.romaji}
+                            <div>
+                                <div className="text-3xl sm:text-4xl font-bold text-slate-800 dark:text-slate-100">
+                                    {character.kana}
+                                </div>
+                                <div className="text-xs sm:text-sm text-slate-500 dark:text-slate-400 mt-1">
+                                    {character.romaji}
+                                </div>
                             </div>
                             
-                            <div className="absolute bottom-2 w-[calc(100%-1rem)] h-2 bg-slate-200 dark:bg-slate-700 rounded-full overflow-hidden">
-                                <div 
-                                    className={`h-full rounded-full ${masteryColor} transition-all duration-300`}
-                                    style={{ width: `${(masteryLevel / 8) * 100}%` }}
-                                ></div>
+                            <div className="w-full">
+                                <div className="h-2.5 bg-slate-300 dark:bg-slate-600 rounded-full overflow-hidden">
+                                    <div 
+                                        className={`h-full rounded-full ${masteryColor} transition-all duration-300`}
+                                        style={{ width: `${(masteryLevel / 8) * 100}%` }}
+                                    ></div>
+                                </div>
                             </div>
                         </div>
                     );
