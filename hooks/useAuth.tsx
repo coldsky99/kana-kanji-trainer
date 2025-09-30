@@ -2,7 +2,6 @@ import React, { createContext, useContext, useState, useEffect } from 'react';
 import { 
     onAuthStateChanged, 
     signOut as firebaseSignOut, 
-    getRedirectResult,
     setPersistence,
     browserLocalPersistence,
     type User 
@@ -22,49 +21,30 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
-        console.log("[Auth] Initializing...");
-
-        let unsubscribe: () => void;
-
-        const initializeAuth = async () => {
-            try {
-                console.log("[Auth] Setting persistence to LOCAL...");
-                await setPersistence(auth, browserLocalPersistence);
-
-                console.log("[Auth] Checking redirect result...");
-                const result = await getRedirectResult(auth);
-                console.log("[Auth] Redirect result:", result ? { uid: result.user.uid } : null);
-                
-                // If redirect has just happened, the user session is now set.
-                // The listener below will now correctly pick up the user.
-
-            } catch (error) {
-                console.error("[Auth] Error during persistence/redirect check:", error);
-            }
-            
-            console.log("[Auth] Setting up onAuthStateChanged listener...");
-            unsubscribe = onAuthStateChanged(auth, (currentUser) => {
-                console.log("[Auth] State changed:", currentUser ? currentUser.uid : null);
-                setUser(currentUser);
-
-                // Set loading to false on the first auth state check.
-                // This ensures we have a definitive user state (or null) before rendering the app.
-                if (loading) {
-                    console.log("[Auth] Loading complete.");
-                    setLoading(false);
-                }
+        console.log("[Auth] Initializing and setting persistence...");
+    
+        setPersistence(auth, browserLocalPersistence)
+            .catch((error) => {
+                console.error("[Auth] Error setting persistence:", error);
             });
-        };
+        
+        console.log("[Auth] Setting up onAuthStateChanged listener...");
+        const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
+            console.log("[Auth] State changed:", currentUser ? currentUser.uid : null);
+            setUser(currentUser);
 
-        initializeAuth();
+            // Set loading to false on the first auth state check.
+            if (loading) {
+                console.log("[Auth] Loading complete.");
+                setLoading(false);
+            }
+        });
 
         return () => {
-            if (unsubscribe) {
-                console.log("[Auth] Unsubscribing from auth state changes.");
-                unsubscribe();
-            }
+            console.log("[Auth] Unsubscribing from auth state changes.");
+            unsubscribe();
         };
-    }, []); // Runs once on mount
+    }, []); // Run only once on mount
 
     const signOut = async () => {
         try {
