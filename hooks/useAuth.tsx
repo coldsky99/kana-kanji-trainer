@@ -16,18 +16,47 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // Process any pending redirect results from a sign-in operation.
-    getRedirectResult(auth).catch((error) => {
-        console.error("Error processing sign-in redirect:", error);
+    let isMounted = true;
+    console.log('[Auth] AuthProvider mounted. Checking auth state...');
+
+    // onAuthStateChanged is the primary listener for auth state.
+    // It fires on initial load (with cached user or null) and whenever state changes.
+    const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
+      if (!isMounted) return;
+      console.log('[Auth] onAuthStateChanged fired. User state is:', currentUser ? currentUser.uid : 'null');
+      setUser(currentUser);
+      // The loading state will be managed by the getRedirectResult promise
+      // to avoid race conditions on redirect.
     });
 
-    // Set up the listener for auth state changes. This will fire after a
-    // successful redirect sign-in, or on initial page load.
-    const unsubscribe = onAuthStateChanged(auth, (user) => {
-      setUser(user);
-      setLoading(false);
-    });
-    return () => unsubscribe();
+    // Process any pending redirect results.
+    // This promise must be handled to know when the auth state is stable after a redirect.
+    getRedirectResult(auth)
+      .then((result) => {
+        if (result) {
+            console.log("[Auth] getRedirectResult processed. User found:", result.user.uid);
+        } else {
+            console.log("[Auth] getRedirectResult processed. No user from redirect.");
+        }
+      })
+      .catch((error) => {
+        console.error("[Auth] Error processing sign-in redirect:", error);
+      })
+      .finally(() => {
+        // This block runs after the redirect check is complete.
+        // By this point, onAuthStateChanged has fired with the definitive user state.
+        // We can now confidently say the initial auth process is finished.
+        if (isMounted) {
+            console.log('[Auth] Auth initialization complete. Setting auth loading to false.');
+            setLoading(false);
+        }
+      });
+
+    return () => {
+      console.log('[Auth] AuthProvider unmounting. Cleaning up auth listener.');
+      isMounted = false;
+      unsubscribe();
+    };
   }, []);
 
   const signOut = async () => {
