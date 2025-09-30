@@ -1,81 +1,86 @@
-import React, { createContext, useContext, useEffect, useState } from 'react';
-import type { User } from 'firebase/auth';
-import { getRedirectResult, onAuthStateChanged, signOut as firebaseSignOut } from 'firebase/auth';
-import { auth } from '../firebase';
+import React, { createContext, useContext, useState, useEffect } from 'react';
+import { 
+    onAuthStateChanged, 
+    signOut as firebaseSignOut, 
+    getRedirectResult,
+    setPersistence,
+    browserLocalPersistence,
+    type User 
+} from 'firebase/auth';
+import { auth } from '../firebase'; 
 
 interface AuthContextType {
-  user: User | null;
-  loading: boolean;
-  signOut: () => Promise<void>;
+    user: User | null;
+    loading: boolean;
+    signOut: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [user, setUser] = useState<User | null>(null);
-  const [loading, setLoading] = useState(true);
+    const [user, setUser] = useState<User | null>(null);
+    const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    let isMounted = true;
-    console.log('[Auth] AuthProvider mounted. Checking auth state...');
+    useEffect(() => {
+        console.log("[Auth] Initializing...");
 
-    // onAuthStateChanged is the primary listener for auth state.
-    // It fires on initial load (with cached user or null) and whenever state changes.
-    const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
-      if (!isMounted) return;
-      console.log('[Auth] onAuthStateChanged fired. User state is:', currentUser ? currentUser.uid : 'null');
-      setUser(currentUser);
-      // The loading state will be managed by the getRedirectResult promise
-      // to avoid race conditions on redirect.
-    });
+        let unsubscribe: () => void;
 
-    // Process any pending redirect results.
-    // This promise must be handled to know when the auth state is stable after a redirect.
-    getRedirectResult(auth)
-      .then((result) => {
-        if (result) {
-            console.log("[Auth] getRedirectResult processed. User found:", result.user.uid);
-        } else {
-            console.log("[Auth] getRedirectResult processed. No user from redirect.");
+        const initializeAuth = async () => {
+            try {
+                console.log("[Auth] Setting persistence to LOCAL...");
+                await setPersistence(auth, browserLocalPersistence);
+
+                console.log("[Auth] Checking redirect result...");
+                const result = await getRedirectResult(auth);
+                console.log("[Auth] Redirect result:", result ? { uid: result.user.uid } : null);
+                
+                // If redirect has just happened, the user session is now set.
+                // The listener below will now correctly pick up the user.
+
+            } catch (error) {
+                console.error("[Auth] Error during persistence/redirect check:", error);
+            }
+            
+            console.log("[Auth] Setting up onAuthStateChanged listener...");
+            unsubscribe = onAuthStateChanged(auth, (currentUser) => {
+                console.log("[Auth] State changed:", currentUser ? currentUser.uid : null);
+                setUser(currentUser);
+
+                // Set loading to false on the first auth state check.
+                // This ensures we have a definitive user state (or null) before rendering the app.
+                if (loading) {
+                    console.log("[Auth] Loading complete.");
+                    setLoading(false);
+                }
+            });
+        };
+
+        initializeAuth();
+
+        return () => {
+            if (unsubscribe) {
+                console.log("[Auth] Unsubscribing from auth state changes.");
+                unsubscribe();
+            }
+        };
+    }, []); // Runs once on mount
+
+    const signOut = async () => {
+        try {
+            await firebaseSignOut(auth);
+        } catch (error) {
+            console.error("Error signing out:", error);
         }
-      })
-      .catch((error) => {
-        console.error("[Auth] Error processing sign-in redirect:", error);
-      })
-      .finally(() => {
-        // This block runs after the redirect check is complete.
-        // By this point, onAuthStateChanged has fired with the definitive user state.
-        // We can now confidently say the initial auth process is finished.
-        if (isMounted) {
-            console.log('[Auth] Auth initialization complete. Setting auth loading to false.');
-            setLoading(false);
-        }
-      });
-
-    return () => {
-      console.log('[Auth] AuthProvider unmounting. Cleaning up auth listener.');
-      isMounted = false;
-      unsubscribe();
     };
-  }, []);
 
-  const signOut = async () => {
-    try {
-        await firebaseSignOut(auth);
-    } catch(error) {
-        console.error("Error signing out: ", error);
-    }
-  };
-
-  const value = { user, loading, signOut };
-
-  return React.createElement(AuthContext.Provider, { value }, children);
+    return React.createElement(AuthContext.Provider, { value: { user, loading, signOut } }, children);
 };
 
 export const useAuth = () => {
-  const context = useContext(AuthContext);
-  if (context === undefined) {
-    throw new Error('useAuth must be used within an AuthProvider');
-  }
-  return context;
+    const context = useContext(AuthContext);
+    if (context === undefined) {
+        throw new Error('useAuth must be used within an AuthProvider');
+    }
+    return context;
 };

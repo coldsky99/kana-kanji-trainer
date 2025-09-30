@@ -31,13 +31,8 @@ const AppContent: React.FC = () => {
   const [currentView, setCurrentView] = React.useState<AppView>(AppView.Dashboard);
   const [showOnboarding, setShowOnboarding] = React.useState(false);
 
-  console.log('[AppContent] Rendering with state:', {
-    authLoading,
-    user: user ? user.uid : null,
-    userDataLoading,
-    userDataExists: !!userData,
-    langInitialized,
-  });
+  console.log(`[App] Rendering - authLoading: ${authLoading}, user: ${user ? user.uid : 'null'}, userDataLoading: ${userDataLoading}`);
+
 
   React.useEffect(() => {
     if (langInitialized && userData && !userData.hasCompletedOnboarding && !showLanguageSelection) {
