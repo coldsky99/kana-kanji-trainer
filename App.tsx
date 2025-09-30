@@ -1,6 +1,3 @@
-
-
-
 import React from 'react';
 import { UserDataProvider, useUserData } from './hooks/useUserData';
 import { LocalizationProvider, useLocalization } from './hooks/useLocalization';
@@ -14,11 +11,10 @@ import SentenceView from './components/SentenceView';
 import OnboardingModal from './components/OnboardingModal';
 import { LanguageSelectionModal } from './components/LanguageSelectionModal';
 import { AppView, KanaType } from './types';
-// FIX: Import LoginView to resolve 'Cannot find name' error.
 import LoginView from './components/LoginView';
 
 const AppContent: React.FC = () => {
-  const { user, loading: authLoading } = useAuth();
+  const { user, loading: authLoading, isInitialized: authInitialized } = useAuth();
   const { userData, completeOnboarding, isLoading: userDataLoading } = useUserData();
   const { 
     language, 
@@ -44,8 +40,6 @@ const AppContent: React.FC = () => {
       case AppView.Katakana:
         return (
           <KanaView
-            // Cast AppView enum to KanaType enum. Their string values are compatible,
-            // but the types do not overlap, so a cast to 'unknown' is required first.
             kanaType={currentView as unknown as KanaType}
           />
         );
@@ -73,7 +67,7 @@ const AppContent: React.FC = () => {
     completeOnboarding();
   };
 
-  if (authLoading || userDataLoading || !langInitialized) {
+  if (authLoading || userDataLoading || !langInitialized || !authInitialized) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 dark:from-slate-900 dark:to-slate-800 flex items-center justify-center">
         <div className="text-center">
@@ -88,7 +82,6 @@ const AppContent: React.FC = () => {
   }
   
   if (!userData) {
-      // This state can happen briefly while the user document is being created
       return (
         <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 dark:from-slate-900 dark:to-slate-800 flex items-center justify-center">
           <div className="text-center">

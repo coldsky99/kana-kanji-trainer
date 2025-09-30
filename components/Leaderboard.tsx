@@ -1,6 +1,4 @@
 import React, { useState, useEffect } from 'react';
-import { collection, query, orderBy, limit, getDocs, type FirestoreError } from 'firebase/firestore';
-import { db } from '../firebase';
 import type { LeaderboardEntry } from '../types';
 import { useLocalization } from '../hooks/useLocalization';
 import { useAuth } from '../hooks/useAuth';
@@ -15,25 +13,14 @@ const Leaderboard: React.FC = () => {
         const fetchLeaderboard = async () => {
             setLoading(true);
             try {
-                const usersRef = collection(db, 'users');
-                // Query the top 10 users, ordered by level and then by XP.
-                const q = query(usersRef, orderBy('level', 'desc'), orderBy('xp', 'desc'), limit(10));
-                
-                const querySnapshot = await getDocs(q);
-                
-                const leaderboardData: LeaderboardEntry[] = querySnapshot.docs.map((doc, index) => ({
-                    rank: index + 1,
-                    uid: doc.id,
-                    displayName: doc.data().displayName,
-                    photoURL: doc.data().photoURL,
-                    level: doc.data().level,
-                    xp: doc.data().xp,
-                }));
-
-                setLeaderboard(leaderboardData);
+                const response = await fetch('/api/db/leaderboard');
+                if (!response.ok) {
+                    throw new Error('Failed to fetch leaderboard');
+                }
+                const data: LeaderboardEntry[] = await response.json();
+                setLeaderboard(data);
             } catch (error) {
-                const firestoreError = error as FirestoreError;
-                console.error("Error fetching leaderboard:", firestoreError.code, firestoreError.message);
+                console.error("Error fetching leaderboard:", error);
             } finally {
                 setLoading(false);
             }
@@ -68,7 +55,7 @@ const Leaderboard: React.FC = () => {
         }
 
         return leaderboard.map((entry) => (
-            <tr key={entry.uid} className={`border-b dark:border-slate-700 ${entry.uid === user?.uid ? 'bg-indigo-50 dark:bg-indigo-900/20' : ''}`}>
+            <tr key={entry.uid} className={`border-b dark:border-slate-700 ${entry.uid === user?.id ? 'bg-indigo-50 dark:bg-indigo-900/20' : ''}`}>
                 <td className="p-3 font-bold text-center">{entry.rank}</td>
                 <td className="p-3">
                     <div className="flex items-center gap-3">

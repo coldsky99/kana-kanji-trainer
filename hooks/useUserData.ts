@@ -1,9 +1,7 @@
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import type { UserData, CharacterMastery } from '../types';
 import { XP_PER_LEVEL, ACHIEVEMENTS, SRS_LEVEL_DURATIONS_HOURS } from '../constants';
-import { useAuth } from './useAuth';
-import { db } from '../firebase';
-import { doc, onSnapshot, setDoc, updateDoc, type FirestoreError } from 'firebase/firestore';
+import { useAuth, type NetlifyUser } from './useAuth';
 
 const initialUserData: Omit<UserData, 'uid' | 'displayName' | 'photoURL'> = {
     level: 1,
@@ -21,7 +19,7 @@ const initialUserData: Omit<UserData, 'uid' | 'displayName' | 'photoURL'> = {
 interface UserDataContextType {
     userData: UserData | null;
     addXp: (amount: number) => Promise<string[]>;
-    updateMastery: (category: keyof UserData, key: string, correct: boolean) => Promise<void>;
+    updateMastery: (category: keyof Pick<UserData, 'hiraganaMastery' | 'katakanaMastery' | 'kanjiMastery'>, key: string, correct: boolean) => Promise<void>;
     isLoading: boolean;
     completeOnboarding: () => Promise<void>;
     resetUserData: () => Promise<void>;
@@ -30,144 +28,203 @@ interface UserDataContextType {
 const UserDataContext = createContext<UserDataContextType | undefined>(undefined);
 
 export const UserDataProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-    const { user } = useAuth();
+    const { user, isInitialized: authInitialized } = useAuth();
     const [userData, setUserData] = useState<UserData | null>(null);
     const [isLoading, setIsLoading] = useState(true);
 
-    useEffect(() => {
-        if (!user) {
-            setUserData(null);
-            setIsLoading(false);
-            return;
-        }
-
+    const fetchUserData = useCallback(async (netlifyUser: NetlifyUser) => {
         setIsLoading(true);
-        // Use the v9 modular doc function to get a document reference.
-        const userDocRef = doc(db, 'users', user.uid);
-        
-        // Use the v9 modular onSnapshot function to listen for real-time updates.
-        const unsubscribe = onSnapshot(userDocRef, (docSnap) => {
-            if (docSnap.exists()) {
-                setUserData(docSnap.data() as UserData);
-            } else {
-                const newUserProfile: UserData = {
-                    ...initialUserData,
-                    uid: user.uid,
-                    displayName: user.displayName || 'Anonymous User',
-                    photoURL: user.photoURL || `https://api.dicebear.com/7.x/initials/svg?seed=${user.displayName || 'A'}`,
-                };
-                // Use the v9 modular setDoc function to create the document.
-                setDoc(userDocRef, newUserProfile).then(() => {
-                    setUserData(newUserProfile);
-                }).catch((error: FirestoreError) => console.error("Error creating user document:", error.code, error.message));
-            }
-            setIsLoading(false);
-        }, (error: FirestoreError) => {
-            console.error("Error listening to user document:", error.code, error.message);
-            setIsLoading(false);
-        });
+        try {
+            const response = await fetch(`/api/db/users/${netlifyUser.id}`, {
+                headers: { Authorization: `Bearer ${netlifyUser.token.access_token}` },
+            });
 
-        return () => unsubscribe();
-    }, [user]);
+            if (response.status === 404) {
+                const newUserProfile: Omit<UserData, keyof typeof initialUserData> = {
+                    uid: netlifyUser.id,
+                    displayName: netlifyUser.user_metadata.full_name || 'Anonymous User',
+                    photoURL: netlifyUser.user_metadata.avatar_url || `https://api.dicebear.com/7.x/initials/svg?seed=${netlifyUser.user_metadata.full_name || 'A'}`,
+                };
+                
+                const createResponse = await fetch('/api/db/users', {
+                    method: 'POST',
+                    headers: { 
+                      'Content-Type': 'application/json',
+                      Authorization: `Bearer ${netlifyUser.token.access_token}`
+                    },
+                    body: JSON.stringify({
+                        id: newUserProfile.uid,
+                        email: netlifyUser.email,
+                        displayName: newUserProfile.displayName,
+                        photoURL: newUserProfile.photoURL,
+                    }),
+                });
+                
+                if (!createResponse.ok) throw new Error('Failed to create user profile');
+                const createdUser = await createResponse.json();
+                setUserData(createdUser);
+
+            } else if (response.ok) {
+                const data = await response.json();
+                setUserData(data);
+            } else {
+                throw new Error('Failed to fetch user data');
+            }
+        } catch (error) {
+            console.error(error);
+        } finally {
+            setIsLoading(false);
+        }
+    }, []);
+
+    useEffect(() => {
+        if (authInitialized) {
+            if (user) {
+                fetchUserData(user);
+            } else {
+                setUserData(null);
+                setIsLoading(false);
+            }
+        }
+    }, [user, authInitialized, fetchUserData]);
 
     const addXp = useCallback(async (amount: number): Promise<string[]> => {
         if (!user || !userData) return [];
-        
-        // Use the v9 modular doc function to get a document reference.
-        const userDocRef = doc(db, 'users', user.uid);
-        let newAchievements: string[] = [];
 
+        const newTotalXp = (userData.level - 1) * XP_PER_LEVEL + userData.xp + amount;
+        const newLevel = Math.floor(newTotalXp / XP_PER_LEVEL) + 1;
+        const xpForNextLevel = newTotalXp % XP_PER_LEVEL;
+        
         const today = new Date().toISOString().split('T')[0];
         const newDailyProgress = [...userData.dailyProgress];
-        let todayProgress = newDailyProgress.find(d => d.date === today);
+        const todayProgressIndex = newDailyProgress.findIndex(d => d.date === today);
 
-        if (todayProgress) {
-            todayProgress.xp += amount;
+        if (todayProgressIndex > -1) {
+            newDailyProgress[todayProgressIndex] = { ...newDailyProgress[todayProgressIndex], xp: newDailyProgress[todayProgressIndex].xp + amount };
         } else {
             newDailyProgress.push({ date: today, xp: amount });
         }
 
-        let newXp = userData.xp + amount;
-        let newLevel = userData.level;
-        while (newXp >= XP_PER_LEVEL) {
-            newXp -= XP_PER_LEVEL;
-            newLevel++;
-        }
-
-        const dataWithNewTotals = {
+        const updatedData: UserData = {
             ...userData,
-            xp: newXp,
+            xp: xpForNextLevel,
             level: newLevel,
             dailyProgress: newDailyProgress,
         };
 
+        const newAchievements: string[] = [];
         ACHIEVEMENTS.forEach(ach => {
-            if (!dataWithNewTotals.achievements.includes(ach.id) && ach.condition(dataWithNewTotals)) {
-                newAchievements.push(ach.nameKey);
-                dataWithNewTotals.achievements.push(ach.id);
+            if (!updatedData.achievements.includes(ach.id) && ach.condition(updatedData)) {
+                newAchievements.push(ach.id);
+                updatedData.achievements.push(ach.id);
             }
         });
 
-        // Use the v9 modular updateDoc function to update the document.
-        await updateDoc(userDocRef, {
-            xp: newXp,
-            level: newLevel,
-            dailyProgress: newDailyProgress,
-            achievements: dataWithNewTotals.achievements
-        });
+        setUserData(updatedData); // Optimistic update
+
+        try {
+            await fetch(`/api/db/users/${user.id}`, {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json',
+                    Authorization: `Bearer ${user.token.access_token}`,
+                },
+                body: JSON.stringify({
+                    level: updatedData.level,
+                    xp: updatedData.xp,
+                    dailyProgress: updatedData.dailyProgress,
+                    achievements: updatedData.achievements,
+                }),
+            });
+        } catch (error) {
+            console.error("Failed to sync XP:", error);
+        }
 
         return newAchievements;
     }, [user, userData]);
 
-    const updateMastery = useCallback(async (category: keyof UserData, key: string, correct: boolean) => {
+    const updateMastery = useCallback(async (category: keyof Pick<UserData, 'hiraganaMastery' | 'katakanaMastery' | 'kanjiMastery'>, key: string, correct: boolean) => {
         if (!user || !userData) return;
-        if (typeof category !== 'string' || !category.endsWith('Mastery')) return;
-
-        const masteryCategory = userData[category as keyof Pick<UserData, 'hiraganaMastery' | 'katakanaMastery' | 'kanjiMastery' | 'wordMastery' | 'sentenceMastery'>] as CharacterMastery;
-        const currentMastery = masteryCategory[key] || { level: 0, lastReviewed: null, nextReview: null };
-        const now = new Date();
-
-        let newLevel = currentMastery.level;
+        
+        const masteryData = userData[category] as CharacterMastery;
+        const currentItem = masteryData[key] || { level: 0, lastReviewed: null, nextReview: null };
+        
         if (correct) {
-            newLevel = Math.min(newLevel + 1, Object.keys(SRS_LEVEL_DURATIONS_HOURS).length - 1);
+            currentItem.level = Math.min(currentItem.level + 1, 8);
         } else {
-            newLevel = Math.max(newLevel - 1, 0);
+            currentItem.level = Math.max(0, currentItem.level - 2);
         }
-        
-        const nextReviewDate = new Date(now.getTime() + (SRS_LEVEL_DURATIONS_HOURS[newLevel] || 0) * 60 * 60 * 1000);
-        
-        const newMasteryItem = {
-            level: newLevel,
-            lastReviewed: now.toISOString(),
-            nextReview: nextReviewDate.toISOString()
-        };
 
-        // Use the v9 modular doc and updateDoc functions.
-        const userDocRef = doc(db, 'users', user.uid);
-        await updateDoc(userDocRef, {
-            [`${category}.${key}`]: newMasteryItem
-        });
+        currentItem.lastReviewed = new Date().toISOString();
+        const reviewIntervalHours = SRS_LEVEL_DURATIONS_HOURS[currentItem.level];
+        const nextReviewDate = new Date();
+        nextReviewDate.setHours(nextReviewDate.getHours() + reviewIntervalHours);
+        currentItem.nextReview = nextReviewDate.toISOString();
+
+        const updatedMastery = { ...masteryData, [key]: currentItem };
+        const updatedData = { ...userData, [category]: updatedMastery };
+        setUserData(updatedData); // Optimistic update
+
+        try {
+            await fetch(`/api/db/users/${user.id}`, {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json',
+                    Authorization: `Bearer ${user.token.access_token}`,
+                },
+                body: JSON.stringify({ [category]: updatedMastery }),
+            });
+        } catch (error) {
+            console.error("Failed to sync mastery:", error);
+        }
     }, [user, userData]);
-    
+
     const completeOnboarding = useCallback(async () => {
-        if (!user) return;
-        // Use the v9 modular doc and updateDoc functions.
-        const userDocRef = doc(db, 'users', user.uid);
-        await updateDoc(userDocRef, { hasCompletedOnboarding: true });
-    }, [user]);
+         if (!user || !userData) return;
+        
+        const updatedData = { ...userData, hasCompletedOnboarding: true };
+        setUserData(updatedData);
+
+        try {
+            await fetch(`/api/db/users/${user.id}`, {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json',
+                    Authorization: `Bearer ${user.token.access_token}`,
+                },
+                body: JSON.stringify({ hasCompletedOnboarding: true }),
+            });
+        } catch (error) {
+            console.error("Failed to complete onboarding:", error);
+        }
+    }, [user, userData]);
 
     const resetUserData = useCallback(async () => {
-        if (!user) return;
-        // Use the v9 modular doc and setDoc functions.
-        const userDocRef = doc(db, 'users', user.uid);
-        const freshData: UserData = {
+       if (!user || !userData) return;
+
+        const dataToReset = {
             ...initialUserData,
-            uid: user.uid,
-            displayName: user.displayName || 'Anonymous User',
-            photoURL: user.photoURL || `https://api.dicebear.com/7.x/initials/svg?seed=${user.displayName || 'A'}`,
         };
-        await setDoc(userDocRef, freshData);
-    }, [user]);
+
+        const updatedData = {
+            ...userData,
+            ...dataToReset,
+        };
+        setUserData(updatedData);
+
+         try {
+            await fetch(`/api/db/users/${user.id}`, {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json',
+                    Authorization: `Bearer ${user.token.access_token}`,
+                },
+                body: JSON.stringify(dataToReset),
+            });
+        } catch (error) {
+            console.error("Failed to reset user data:", error);
+        }
+    }, [user, userData]);
 
     return React.createElement(UserDataContext.Provider, { value: { userData, addXp, updateMastery, isLoading, completeOnboarding, resetUserData } }, children);
 };

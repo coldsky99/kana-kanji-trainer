@@ -1,5 +1,3 @@
-
-
 import React, { useState, useRef, useEffect } from 'react';
 import { useUserData } from '../hooks/useUserData';
 import { useAuth } from '../hooks/useAuth';
@@ -14,7 +12,7 @@ interface HeaderProps {
 
 const Header: React.FC<HeaderProps> = ({ currentView, setView }) => {
   const { userData } = useUserData();
-  const { user, signOut } = useAuth();
+  const { user, logout } = useAuth();
   const { language, changeLanguage, t } = useLocalization();
   const [isLangDropdownOpen, setIsLangDropdownOpen] = useState(false);
   const [isUserDropdownOpen, setIsUserDropdownOpen] = useState(false);
@@ -79,17 +77,17 @@ const Header: React.FC<HeaderProps> = ({ currentView, setView }) => {
           </div>
           <div className="relative" ref={userDropdownRef}>
             <button onClick={() => setIsUserDropdownOpen(!isUserDropdownOpen)} className="w-10 h-10 rounded-full flex items-center justify-center bg-slate-200 dark:bg-slate-700">
-              <img src={user?.photoURL || ''} alt={user?.displayName || 'User'} className="w-10 h-10 rounded-full object-cover" />
+              <img src={user?.user_metadata?.avatar_url || ''} alt={user?.user_metadata?.full_name || 'User'} className="w-10 h-10 rounded-full object-cover" />
             </button>
             {isUserDropdownOpen && (
               <div className="absolute right-0 mt-2 w-48 bg-white dark:bg-slate-700 rounded-md shadow-lg py-1 z-10 border dark:border-slate-600">
                 <div className="px-4 py-2 border-b dark:border-slate-600">
-                  <p className="text-sm font-semibold truncate text-slate-800 dark:text-slate-100">{user?.displayName}</p>
+                  <p className="text-sm font-semibold truncate text-slate-800 dark:text-slate-100">{user?.user_metadata?.full_name}</p>
                   <p className="text-xs text-slate-500 dark:text-slate-400 truncate">{user?.email}</p>
                 </div>
                 <a
                   href="#"
-                  onClick={(e) => { e.preventDefault(); signOut(); setIsUserDropdownOpen(false); }}
+                  onClick={(e) => { e.preventDefault(); logout(); setIsUserDropdownOpen(false); }}
                   className='block w-full text-left px-4 py-2 text-sm text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20'
                 >
                   {t('header.logout')}
