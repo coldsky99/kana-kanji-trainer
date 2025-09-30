@@ -1,4 +1,5 @@
 
+
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
 
 const translations = {
@@ -80,6 +81,13 @@ const translations = {
     'achievements.consistent.description': 'Maintain a 3-day streak.',
     'achievements.hiragana_master.name': 'Hiragana Master',
     'achievements.hiragana_master.description': 'Learn all basic hiragana characters.',
+    'dashboard.settings.title': 'Settings',
+    'dashboard.settings.reset.button': 'Reset Progress',
+    'dashboard.settings.reset.description': 'This will delete all your learning data, including XP, levels, and achievements. This action is irreversible.',
+    'resetModal.title': 'Are you absolutely sure?',
+    'resetModal.warning': 'This will permanently delete all your progress. This action cannot be undone.',
+    'resetModal.cancel': 'Cancel',
+    'resetModal.confirm': 'Yes, delete my data',
   },
   id: {
     'header.dashboard': 'Dasbor',
@@ -159,6 +167,13 @@ const translations = {
     'achievements.consistent.description': 'Pertahankan rentetan 3 hari.',
     'achievements.hiragana_master.name': 'Master Hiragana',
     'achievements.hiragana_master.description': 'Pelajari semua karakter dasar hiragana.',
+    'dashboard.settings.title': 'Pengaturan',
+    'dashboard.settings.reset.button': 'Atur Ulang Progres',
+    'dashboard.settings.reset.description': 'Ini akan menghapus semua data belajar Anda, termasuk XP, level, dan pencapaian. Tindakan ini tidak dapat diurungkan.',
+    'resetModal.title': 'Apakah Anda benar-benar yakin?',
+    'resetModal.warning': 'Ini akan menghapus semua kemajuan Anda secara permanen. Tindakan ini tidak dapat dibatalkan.',
+    'resetModal.cancel': 'Batal',
+    'resetModal.confirm': 'Ya, hapus data saya',
   }
 };
 

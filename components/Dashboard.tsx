@@ -1,10 +1,50 @@
-import React from 'react';
+
+import React, { useState } from 'react';
 import { useUserData } from '../hooks/useUserData';
 import { useLocalization } from '../hooks/useLocalization';
 import { AppView } from '../types';
 import { HIRAGANA_DATA, KATAKANA_DATA, KANJI_DATA, XP_PER_LEVEL, ACHIEVEMENTS } from '../constants';
 import { TrophyIcon, StarIcon, BookOpenIcon, LockIcon, QuestionMarkCircleIcon } from './icons';
 import Tooltip from './Tooltip';
+
+interface ResetProgressModalProps {
+    onClose: () => void;
+    onConfirm: () => void;
+}
+
+const ResetProgressModal: React.FC<ResetProgressModalProps> = ({ onClose, onConfirm }) => {
+    const { t } = useLocalization();
+
+    return (
+        <div className="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50 p-4">
+            <div className="bg-white dark:bg-slate-800 p-6 rounded-lg shadow-2xl w-full max-w-md relative text-center">
+                <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-red-100 dark:bg-red-900/50">
+                    <i className="fa-solid fa-triangle-exclamation h-6 w-6 text-2xl text-red-600 dark:text-red-400"></i>
+                </div>
+                <h3 className="mt-5 text-xl font-semibold leading-6 text-slate-900 dark:text-slate-100">{t('resetModal.title')}</h3>
+                <div className="mt-2">
+                    <p className="text-sm text-slate-500 dark:text-slate-400">{t('resetModal.warning')}</p>
+                </div>
+                <div className="mt-6 flex justify-center gap-4">
+                    <button
+                        type="button"
+                        className="inline-flex justify-center rounded-md bg-white dark:bg-slate-700 px-4 py-2 text-sm font-semibold text-slate-900 dark:text-slate-200 shadow-sm ring-1 ring-inset ring-slate-300 dark:ring-slate-600 hover:bg-slate-50 dark:hover:bg-slate-600"
+                        onClick={onClose}
+                    >
+                        {t('resetModal.cancel')}
+                    </button>
+                    <button
+                        type="button"
+                        className="inline-flex justify-center rounded-md bg-red-600 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-red-500"
+                        onClick={onConfirm}
+                    >
+                        {t('resetModal.confirm')}
+                    </button>
+                </div>
+            </div>
+        </div>
+    );
+};
 
 // Helper component for individual stats
 const StatCard: React.FC<{ label: string; value: string | number; icon: React.ReactNode }> = ({ label, value, icon }) => (
@@ -50,8 +90,9 @@ const ModuleCard: React.FC<{
 
 
 const Dashboard: React.FC<{ setView: (v: AppView) => void }> = ({ setView }) => {
-    const { userData } = useUserData();
+    const { userData, resetUserData } = useUserData();
     const { t } = useLocalization();
+    const [isResetModalOpen, setIsResetModalOpen] = useState(false);
 
     // --- Calculations ---
     const hiraMasteryCount = Object.keys(userData.hiraganaMastery).length;
@@ -191,6 +232,30 @@ const Dashboard: React.FC<{ setView: (v: AppView) => void }> = ({ setView }) => 
                     )}
                 </div>
             </section>
+
+            {/* Settings/Reset Panel */}
+            <section>
+                <h2 className="text-2xl sm:text-3xl font-bold mb-4">{t('dashboard.settings.title')}</h2>
+                <div className="bg-white dark:bg-slate-800 p-6 rounded-lg shadow-md border border-red-500/30">
+                    <h3 className="text-lg font-bold text-red-600 dark:text-red-400">Reset Application Data</h3>
+                    <p className="text-slate-600 dark:text-slate-400 mt-2 mb-4">
+                        {t('dashboard.settings.reset.description')}
+                    </p>
+                    <button 
+                        onClick={() => setIsResetModalOpen(true)}
+                        className="bg-red-600 text-white px-4 py-2 rounded-lg font-semibold hover:bg-red-700 transition-colors"
+                    >
+                        {t('dashboard.settings.reset.button')}
+                    </button>
+                </div>
+            </section>
+
+            {isResetModalOpen && (
+                <ResetProgressModal
+                    onClose={() => setIsResetModalOpen(false)}
+                    onConfirm={resetUserData}
+                />
+            )}
         </div>
     );
 };

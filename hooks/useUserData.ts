@@ -1,3 +1,4 @@
+
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import type { UserData, CharacterMastery } from '../types';
 import { XP_PER_LEVEL, ACHIEVEMENTS, SRS_LEVEL_DURATIONS_HOURS } from '../constants';
@@ -21,6 +22,7 @@ interface UserDataContextType {
     updateMastery: (category: keyof UserData, key: string, correct: boolean) => void;
     isLoading: boolean;
     completeOnboarding: () => void;
+    resetUserData: () => void;
 }
 
 const UserDataContext = createContext<UserDataContextType | undefined>(undefined);
@@ -127,9 +129,17 @@ export const UserDataProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         setUserData(prevData => ({ ...prevData, hasCompletedOnboarding: true }));
     }, []);
 
+    const resetUserData = useCallback(() => {
+        try {
+            localStorage.clear();
+            window.location.reload();
+        } catch (error) {
+            console.error("Failed to clear user data from localStorage", error);
+        }
+    }, []);
 
     // Fix: Replaced JSX with React.createElement because .ts files cannot contain JSX, which was causing parsing errors.
-    return React.createElement(UserDataContext.Provider, { value: { userData, addXp, updateMastery, isLoading, completeOnboarding } }, children);
+    return React.createElement(UserDataContext.Provider, { value: { userData, addXp, updateMastery, isLoading, completeOnboarding, resetUserData } }, children);
 };
 
 export const useUserData = () => {
