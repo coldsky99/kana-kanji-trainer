@@ -3,6 +3,7 @@
 import React from 'react';
 import { UserDataProvider, useUserData } from './hooks/useUserData';
 import { LocalizationProvider, useLocalization } from './hooks/useLocalization';
+import { AuthProvider, useAuth } from './hooks/useAuth';
 import Header from './components/Header';
 // Fix: Use default import for Dashboard component.
 import Dashboard from './components/Dashboard';
@@ -12,16 +13,18 @@ import WordBuilderView from './components/WordBuilderView';
 import SentenceView from './components/SentenceView';
 import OnboardingModal from './components/OnboardingModal';
 import { LanguageSelectionModal } from './components/LanguageSelectionModal';
+import LoginView from './components/LoginView';
 // Fix: Import KanaType for type casting.
 import { AppView, KanaType } from './types';
 
 const AppContent: React.FC = () => {
-  const { userData, completeOnboarding } = useUserData();
+  const { user, loading: authLoading } = useAuth();
+  const { userData, completeOnboarding, isLoading: userDataLoading } = useUserData();
   const { 
     language, 
     changeLanguage, 
     showLanguageSelection, 
-    isInitialized,
+    isInitialized: langInitialized,
     supportedLanguages 
   } = useLocalization();
   
@@ -29,10 +32,10 @@ const AppContent: React.FC = () => {
   const [showOnboarding, setShowOnboarding] = React.useState(false);
 
   React.useEffect(() => {
-    if (isInitialized && !userData.hasCompletedOnboarding && !showLanguageSelection) {
+    if (langInitialized && userData && !userData.hasCompletedOnboarding && !showLanguageSelection) {
       setShowOnboarding(true);
     }
-  }, [isInitialized, userData.hasCompletedOnboarding, showLanguageSelection]);
+  }, [langInitialized, userData, showLanguageSelection]);
 
   const renderView = () => {
     switch (currentView) {
@@ -69,7 +72,7 @@ const AppContent: React.FC = () => {
     completeOnboarding();
   };
 
-  if (!isInitialized) {
+  if (authLoading || userDataLoading || !langInitialized) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 dark:from-slate-900 dark:to-slate-800 flex items-center justify-center">
         <div className="text-center">
@@ -77,6 +80,22 @@ const AppContent: React.FC = () => {
         </div>
       </div>
     );
+  }
+
+  if (!user) {
+    return <LoginView />;
+  }
+  
+  if (!userData) {
+      // This state can happen briefly while the user document is being created
+      return (
+        <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 dark:from-slate-900 dark:to-slate-800 flex items-center justify-center">
+          <div className="text-center">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600 dark:border-indigo-400 mx-auto mb-4"></div>
+            <p>Setting up your account...</p>
+          </div>
+        </div>
+      );
   }
 
   return (
@@ -93,7 +112,7 @@ const AppContent: React.FC = () => {
         />
       )}
       
-      {showOnboarding && (
+      {showOnboarding && userData && !userData.hasCompletedOnboarding && (
         <OnboardingModal onComplete={handleOnboardingComplete} />
       )}
     </div>
@@ -102,11 +121,13 @@ const AppContent: React.FC = () => {
 
 const App: React.FC = () => {
   return (
-    <UserDataProvider>
-      <LocalizationProvider>
-        <AppContent />
-      </LocalizationProvider>
-    </UserDataProvider>
+    <LocalizationProvider>
+      <AuthProvider>
+        <UserDataProvider>
+          <AppContent />
+        </UserDataProvider>
+      </AuthProvider>
+    </LocalizationProvider>
   );
 };
 

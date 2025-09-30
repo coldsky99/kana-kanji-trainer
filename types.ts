@@ -37,6 +37,9 @@ export interface DailyProgress {
 }
 
 export interface UserData {
+    uid: string;
+    displayName: string;
+    photoURL: string;
     level: number;
     xp: number;
     hiraganaMastery: CharacterMastery;
@@ -72,4 +75,8 @@ export interface Kanji {
   meaning: string;
   onyomi: string;
   kunyomi: string;
+}
+
+export interface LeaderboardEntry extends Pick<UserData, 'uid' | 'displayName' | 'photoURL' | 'level' | 'xp'> {
+  rank: number;
 }

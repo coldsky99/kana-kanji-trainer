@@ -7,7 +7,11 @@ const translations = {
     'header.dashboard': 'Dashboard',
     'header.level': 'Level',
     'header.characters': 'chars learned',
-    'dashboard.welcome': 'Welcome back!',
+    'header.logout': 'Logout',
+    'login.title': 'Welcome to Nihongo Master',
+    'login.subtitle': 'Sign in to save your progress and join the leaderboard.',
+    'login.googleButton': 'Sign in with Google',
+    'dashboard.welcome': 'Welcome back, {name}!',
     'dashboard.level': 'Level',
     'dashboard.xp': 'XP',
     'dashboard.progress': 'Progress to next level',
@@ -82,18 +86,30 @@ const translations = {
     'achievements.hiragana_master.name': 'Hiragana Master',
     'achievements.hiragana_master.description': 'Learn all basic hiragana characters.',
     'dashboard.settings.title': 'Settings',
+    'dashboard.settings.reset.title': 'Reset Application Data',
     'dashboard.settings.reset.button': 'Reset Progress',
     'dashboard.settings.reset.description': 'This will delete all your learning data, including XP, levels, and achievements. This action is irreversible.',
     'resetModal.title': 'Are you absolutely sure?',
     'resetModal.warning': 'This will permanently delete all your progress. This action cannot be undone.',
     'resetModal.cancel': 'Cancel',
     'resetModal.confirm': 'Yes, delete my data',
+    'leaderboard.title': 'Leaderboard',
+    'leaderboard.rank': 'Rank',
+    'leaderboard.player': 'Player',
+    'leaderboard.level': 'Level',
+    'leaderboard.xp': 'XP',
+    'leaderboard.empty': 'Be the first to get on the leaderboard!',
+    'leaderboard.loading': 'Loading Leaderboard...',
   },
   id: {
     'header.dashboard': 'Dasbor',
     'header.level': 'Level',
     'header.characters': 'karakter dipelajari',
-    'dashboard.welcome': 'Selamat datang kembali!',
+    'header.logout': 'Keluar',
+    'login.title': 'Selamat Datang di Nihongo Master',
+    'login.subtitle': 'Masuk untuk menyimpan progres dan bergabung di papan peringkat.',
+    'login.googleButton': 'Masuk dengan Google',
+    'dashboard.welcome': 'Selamat datang kembali, {name}!',
     'dashboard.level': 'Level',
     'dashboard.xp': 'XP',
     'dashboard.progress': 'Progres ke level berikutnya',
@@ -168,12 +184,20 @@ const translations = {
     'achievements.hiragana_master.name': 'Master Hiragana',
     'achievements.hiragana_master.description': 'Pelajari semua karakter dasar hiragana.',
     'dashboard.settings.title': 'Pengaturan',
+    'dashboard.settings.reset.title': 'Atur Ulang Data Aplikasi',
     'dashboard.settings.reset.button': 'Atur Ulang Progres',
     'dashboard.settings.reset.description': 'Ini akan menghapus semua data belajar Anda, termasuk XP, level, dan pencapaian. Tindakan ini tidak dapat diurungkan.',
     'resetModal.title': 'Apakah Anda benar-benar yakin?',
     'resetModal.warning': 'Ini akan menghapus semua kemajuan Anda secara permanen. Tindakan ini tidak dapat dibatalkan.',
     'resetModal.cancel': 'Batal',
     'resetModal.confirm': 'Ya, hapus data saya',
+    'leaderboard.title': 'Papan Peringkat',
+    'leaderboard.rank': 'Pkt',
+    'leaderboard.player': 'Pemain',
+    'leaderboard.level': 'Level',
+    'leaderboard.xp': 'XP',
+    'leaderboard.empty': 'Jadilah yang pertama masuk papan peringkat!',
+    'leaderboard.loading': 'Memuat Papan Peringkat...',
   }
 };
 
@@ -225,7 +249,7 @@ export const LocalizationProvider: React.FC<{ children: React.ReactNode }> = ({ 
 
   const t = useCallback((key: TranslationKey, replacements?: { [key: string]: string | number }): string => {
     const langTranslations = translations[language] || translations.en;
-    let translation = langTranslations[key as keyof typeof langTranslations] || translations.en[key as keyof typeof translations.en] || key;
+    let translation = langTranslations[key as keyof typeof langTranslations] || translations.en[key as keyof typeof translations.en] || String(key);
     
     if (replacements) {
         Object.keys(replacements).forEach(rKey => {

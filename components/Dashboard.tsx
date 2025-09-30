@@ -1,4 +1,5 @@
 
+
 import React, { useState } from 'react';
 import { useUserData } from '../hooks/useUserData';
 import { useLocalization } from '../hooks/useLocalization';
@@ -6,6 +7,7 @@ import { AppView } from '../types';
 import { HIRAGANA_DATA, KATAKANA_DATA, KANJI_DATA, XP_PER_LEVEL, ACHIEVEMENTS } from '../constants';
 import { TrophyIcon, StarIcon, BookOpenIcon, LockIcon, QuestionMarkCircleIcon } from './icons';
 import Tooltip from './Tooltip';
+import Leaderboard from './Leaderboard';
 
 interface ResetProgressModalProps {
     onClose: () => void;
@@ -36,7 +38,7 @@ const ResetProgressModal: React.FC<ResetProgressModalProps> = ({ onClose, onConf
                     <button
                         type="button"
                         className="inline-flex justify-center rounded-md bg-red-600 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-red-500"
-                        onClick={onConfirm}
+                        onClick={() => { onConfirm(); onClose(); }}
                     >
                         {t('resetModal.confirm')}
                     </button>
@@ -94,6 +96,11 @@ const Dashboard: React.FC<{ setView: (v: AppView) => void }> = ({ setView }) => 
     const { t } = useLocalization();
     const [isResetModalOpen, setIsResetModalOpen] = useState(false);
 
+    // Guard against null userData
+    if (!userData) {
+        return null; 
+    }
+
     // --- Calculations ---
     const hiraMasteryCount = Object.keys(userData.hiraganaMastery).length;
     const kataMasteryCount = Object.keys(userData.katakanaMastery).length;
@@ -109,8 +116,6 @@ const Dashboard: React.FC<{ setView: (v: AppView) => void }> = ({ setView }) => 
     const calculateStreak = (dailyProgress: typeof userData.dailyProgress): number => {
         if (dailyProgress.length === 0) return 0;
 
-        // Fix: Cast arguments to `new Date` to string to handle `unknown` type from `any[]`.
-        // This prevents errors when `dailyProgress` is inferred as `any[]` from localStorage.
         const dates = [...new Set(dailyProgress.map(d => String(d.date)))].sort((a, b) => new Date(b as string).getTime() - new Date(a as string).getTime());
         const today = new Date();
         today.setHours(0, 0, 0, 0);
@@ -149,7 +154,7 @@ const Dashboard: React.FC<{ setView: (v: AppView) => void }> = ({ setView }) => 
         <div className="space-y-8">
             {/* Stats Panel */}
             <section>
-                <h2 className="text-2xl sm:text-3xl font-bold mb-4">{t('dashboard.welcome')}</h2>
+                <h2 className="text-2xl sm:text-3xl font-bold mb-4">{t('dashboard.welcome', { name: userData.displayName.split(' ')[0] })}</h2>
                 <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
                     <StatCard label={t('dashboard.stats.level')} value={userData.level} icon={<TrophyIcon />} />
                     <StatCard label={t('dashboard.stats.xp')} value={`${userData.xp} / ${XP_PER_LEVEL}`} icon={<StarIcon />} />
@@ -163,92 +168,102 @@ const Dashboard: React.FC<{ setView: (v: AppView) => void }> = ({ setView }) => 
                     </div>
                 </div>
             </section>
+            
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                <div className="lg:col-span-2 space-y-8">
+                    {/* Learning Modules */}
+                    <section>
+                        <h2 className="text-2xl sm:text-3xl font-bold mb-4">{t('dashboard.modules')}</h2>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            <ModuleCard 
+                                title={t('dashboard.module.learnHiragana.title')}
+                                description={t('dashboard.module.learnHiragana.description')}
+                                onClick={() => setView(AppView.Hiragana)}
+                                unlocked={true}
+                                progressPercent={hiraPct}
+                            />
+                            <ModuleCard 
+                                title={t('dashboard.module.learnKatakana.title')}
+                                description={t('dashboard.module.learnKatakana.description')}
+                                onClick={() => setView(AppView.Katakana)}
+                                unlocked={true}
+                                progressPercent={kataPct}
+                            />
+                             <ModuleCard 
+                                title={t('dashboard.module.learnKanji.title')}
+                                description={t('dashboard.module.learnKanji.description')}
+                                onClick={() => setView(AppView.Kanji)}
+                                unlocked={true}
+                                progressPercent={kanjiPct}
+                            />
+                             <ModuleCard 
+                                title={t('dashboard.module.buildWords.title')}
+                                description={t('dashboard.module.buildWords.description')}
+                                onClick={() => setView(AppView.Words)}
+                                unlocked={wordsUnlocked}
+                                progressPercent={(wordsUnlocked || (hiraPct === 100 && kataPct === 100)) ? (kanjiPct / 20 * 100) : ((hiraPct + kataPct)/2)}
+                                unlockHint={t('dashboard.unlocks.hint.words')}
+                            />
+                            <ModuleCard 
+                                title={t('dashboard.module.practiceSentences.title')}
+                                description={t('dashboard.module.practiceSentences.description')}
+                                onClick={() => setView(AppView.Sentences)}
+                                unlocked={sentencesUnlocked}
+                                progressPercent={(sentencesUnlocked || (hiraPct === 100 && kataPct === 100)) ? (kanjiPct / 50 * 100) : ((hiraPct + kataPct)/2)}
+                                unlockHint={t('dashboard.unlocks.hint.sentences')}
+                            />
+                        </div>
+                    </section>
 
-            {/* Learning Modules */}
-            <section>
-                <h2 className="text-2xl sm:text-3xl font-bold mb-4">{t('dashboard.modules')}</h2>
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                    <ModuleCard 
-                        title={t('dashboard.module.learnHiragana.title')}
-                        description={t('dashboard.module.learnHiragana.description')}
-                        onClick={() => setView(AppView.Hiragana)}
-                        unlocked={true}
-                        progressPercent={hiraPct}
-                    />
-                    <ModuleCard 
-                        title={t('dashboard.module.learnKatakana.title')}
-                        description={t('dashboard.module.learnKatakana.description')}
-                        onClick={() => setView(AppView.Katakana)}
-                        unlocked={true}
-                        progressPercent={kataPct}
-                    />
-                     <ModuleCard 
-                        title={t('dashboard.module.learnKanji.title')}
-                        description={t('dashboard.module.learnKanji.description')}
-                        onClick={() => setView(AppView.Kanji)}
-                        unlocked={true}
-                        progressPercent={kanjiPct}
-                    />
-                     <ModuleCard 
-                        title={t('dashboard.module.buildWords.title')}
-                        description={t('dashboard.module.buildWords.description')}
-                        onClick={() => setView(AppView.Words)}
-                        unlocked={wordsUnlocked}
-                        progressPercent={(wordsUnlocked || (hiraPct === 100 && kataPct === 100)) ? (kanjiPct / 20 * 100) : ((hiraPct + kataPct)/2)}
-                        unlockHint={t('dashboard.unlocks.hint.words')}
-                    />
-                    <ModuleCard 
-                        title={t('dashboard.module.practiceSentences.title')}
-                        description={t('dashboard.module.practiceSentences.description')}
-                        onClick={() => setView(AppView.Sentences)}
-                        unlocked={sentencesUnlocked}
-                        progressPercent={(sentencesUnlocked || (hiraPct === 100 && kataPct === 100)) ? (kanjiPct / 50 * 100) : ((hiraPct + kataPct)/2)}
-                        unlockHint={t('dashboard.unlocks.hint.sentences')}
-                    />
-                </div>
-            </section>
-
-            {/* Achievements Panel */}
-            <section>
-                <h2 className="text-2xl sm:text-3xl font-bold mb-4">{t('dashboard.achievements.title')}</h2>
-                <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 lg:grid-cols-8 gap-4">
-                    {earnedAchievements.length > 0 ? (
-                        earnedAchievements.map(ach => (
-                            <Tooltip key={ach.id} text={t(ach.descriptionKey as any)}>
-                                <div className="aspect-square">
-                                    <div className="w-full h-full flex flex-col items-center text-center p-2 sm:p-3 bg-white dark:bg-slate-800 rounded-lg shadow-md transition-transform hover:scale-105">
-                                        <div className="flex-1 flex items-center justify-center text-3xl sm:text-4xl text-yellow-500">
-                                            {ach.icon}
+                    {/* Achievements Panel */}
+                    <section>
+                        <h2 className="text-2xl sm:text-3xl font-bold mb-4">{t('dashboard.achievements.title')}</h2>
+                        <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 gap-4">
+                            {earnedAchievements.length > 0 ? (
+                                earnedAchievements.map(ach => (
+                                    <Tooltip key={ach.id} text={t(ach.descriptionKey as any)}>
+                                        <div className="aspect-square">
+                                            <div className="w-full h-full flex flex-col items-center text-center p-2 sm:p-3 bg-white dark:bg-slate-800 rounded-lg shadow-md transition-transform hover:scale-105">
+                                                <div className="flex-1 flex items-center justify-center text-3xl sm:text-4xl text-yellow-500">
+                                                    {ach.icon}
+                                                </div>
+                                                <p className="text-xs font-semibold leading-tight h-8 shrink-0 flex items-center justify-center">
+                                                    {t(ach.nameKey as any)}
+                                                </p>
+                                            </div>
                                         </div>
-                                        <p className="text-xs font-semibold leading-tight h-8 shrink-0 flex items-center justify-center">
-                                            {t(ach.nameKey as any)}
-                                        </p>
-                                    </div>
-                                </div>
-                            </Tooltip>
-                        ))
-                    ) : (
-                        <p className="col-span-full text-slate-500">{t('dashboard.achievements.none')}</p>
-                    )}
+                                    </Tooltip>
+                                ))
+                            ) : (
+                                <p className="col-span-full text-slate-500">{t('dashboard.achievements.none')}</p>
+                            )}
+                        </div>
+                    </section>
                 </div>
-            </section>
+                
+                <div className="lg:col-span-1 space-y-8">
+                    {/* Leaderboard */}
+                    <Leaderboard />
 
-            {/* Settings/Reset Panel */}
-            <section>
-                <h2 className="text-2xl sm:text-3xl font-bold mb-4">{t('dashboard.settings.title')}</h2>
-                <div className="bg-white dark:bg-slate-800 p-6 rounded-lg shadow-md border border-red-500/30">
-                    <h3 className="text-lg font-bold text-red-600 dark:text-red-400">Reset Application Data</h3>
-                    <p className="text-slate-600 dark:text-slate-400 mt-2 mb-4">
-                        {t('dashboard.settings.reset.description')}
-                    </p>
-                    <button 
-                        onClick={() => setIsResetModalOpen(true)}
-                        className="bg-red-600 text-white px-4 py-2 rounded-lg font-semibold hover:bg-red-700 transition-colors"
-                    >
-                        {t('dashboard.settings.reset.button')}
-                    </button>
+                    {/* Settings/Reset Panel */}
+                    <section>
+                        <h2 className="text-2xl sm:text-3xl font-bold mb-4">{t('dashboard.settings.title')}</h2>
+                        <div className="bg-white dark:bg-slate-800 p-6 rounded-lg shadow-md border border-red-500/30">
+                            <h3 className="text-lg font-bold text-red-600 dark:text-red-400">{t('dashboard.settings.reset.title')}</h3>
+                            <p className="text-slate-600 dark:text-slate-400 mt-2 mb-4">
+                                {t('dashboard.settings.reset.description')}
+                            </p>
+                            <button 
+                                onClick={() => setIsResetModalOpen(true)}
+                                className="bg-red-600 text-white px-4 py-2 rounded-lg font-semibold hover:bg-red-700 transition-colors"
+                            >
+                                {t('dashboard.settings.reset.button')}
+                            </button>
+                        </div>
+                    </section>
                 </div>
-            </section>
+            </div>
+
 
             {isResetModalOpen && (
                 <ResetProgressModal
