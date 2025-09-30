@@ -1,15 +1,10 @@
-import React, { createContext, useContext, useState, useEffect } from 'react';
-// Fix: Use Firebase v9 compat imports to support v8 syntax.
+import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
+import { auth } from '../firebase';
 import firebase from 'firebase/compat/app';
 import 'firebase/compat/auth';
-import { auth } from '../firebase'; 
-
-// Fix: Define types for Firebase v8
-type User = firebase.User;
-type AuthError = firebase.auth.AuthError;
 
 interface AuthContextType {
-    user: User | null;
+    user: firebase.User | null;
     loading: boolean;
     signOut: () => Promise<void>;
 }
@@ -17,48 +12,64 @@ interface AuthContextType {
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-    const [user, setUser] = useState<User | null>(null);
+    const [user, setUser] = useState<firebase.User | null>(null);
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
-        console.log("[Auth] Initializing and setting persistence...");
-    
-        // Fix: Use v8 syntax for setPersistence
-        auth.setPersistence(firebase.auth.Auth.Persistence.LOCAL)
-            .catch((error: AuthError) => {
-                console.error("[Auth] Error setting persistence:", error.code, error.message);
-            });
-        
-        console.log("[Auth] Setting up onAuthStateChanged listener...");
-        // Fix: Use v8 syntax for onAuthStateChanged
-        const unsubscribe = auth.onAuthStateChanged((currentUser) => {
-            console.log("[Auth] State changed:", currentUser ? currentUser.uid : null);
-            setUser(currentUser);
-
-            // Set loading to false on the first auth state check.
-            if (loading) {
-                console.log("[Auth] Loading complete.");
-                setLoading(false);
+        const unsubscribe = auth.onAuthStateChanged(async (firebaseUser) => {
+            if (firebaseUser) {
+                const needsUpdate = !firebaseUser.displayName || !firebaseUser.photoURL;
+                const reloadFlag = `reload_${firebaseUser.uid}`;
+                
+                if (needsUpdate && !sessionStorage.getItem(reloadFlag)) {
+                    try {
+                        const displayName = firebaseUser.displayName || `User${Math.floor(Math.random() * 10000)}`;
+                        const photoURL = firebaseUser.photoURL || `https://api.dicebear.com/7.x/bottts/svg?seed=${firebaseUser.uid}`;
+                        
+                        await firebaseUser.updateProfile({
+                            displayName,
+                            photoURL,
+                        });
+                        
+                        sessionStorage.setItem(reloadFlag, 'true');
+                        setTimeout(() => {
+                            window.location.reload();
+                        }, 500);
+                        
+                        // Don't update state yet, wait for reload to show updated profile
+                        return;
+                    } catch (error) {
+                        console.error("Error updating profile:", error);
+                        // Fall through to set user even if update fails
+                    }
+                }
+                
+                // Set user if profile is complete, update failed, or reload already happened
+                setUser(firebaseUser);
+            } else {
+                setUser(null);
             }
+            setLoading(false);
         });
 
-        return () => {
-            console.log("[Auth] Unsubscribing from auth state changes.");
-            unsubscribe();
-        };
-    }, []); // Run only once on mount
+        return () => unsubscribe();
+    }, []);
 
-    const signOut = async () => {
+    const signOut = useCallback(async () => {
         try {
-            // Fix: Use v8 syntax for signOut
             await auth.signOut();
         } catch (error) {
-            const authError = error as AuthError;
-            console.error("Error signing out:", authError.code, authError.message);
+            console.error('Error signing out:', error);
         }
-    };
+    }, []);
 
-    return React.createElement(AuthContext.Provider, { value: { user, loading, signOut } }, children);
+    const value = { user, loading, signOut };
+
+    return (
+        <AuthContext.Provider value={value}>
+            {children}
+        </AuthContext.Provider>
+    );
 };
 
 export const useAuth = () => {

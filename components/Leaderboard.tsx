@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { db } from '../firebase';
+// Fix: Remove v9 modular imports and use v8 namespaced syntax for consistency.
 import type { LeaderboardEntry, UserData } from '../types';
 import { useLocalization } from '../hooks/useLocalization';
 import { TrophyIcon } from './icons';
@@ -10,11 +11,10 @@ const Leaderboard: React.FC = () => {
     const { t } = useLocalization();
 
     useEffect(() => {
-        // Fix: Use v8 syntax for collection and querying
-        const usersRef = db.collection('users');
-        const q = usersRef.orderBy('xp', 'desc').limit(10);
+        // Fix: Use v8 namespaced syntax for querying Firestore.
+        const usersCollectionRef = db.collection('users');
+        const q = usersCollectionRef.orderBy('xp', 'desc').limit(10);
 
-        // Fix: Use v8 syntax for onSnapshot
         const unsubscribe = q.onSnapshot((querySnapshot) => {
             const leaderboardData: LeaderboardEntry[] = [];
             querySnapshot.forEach((doc, index) => {

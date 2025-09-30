@@ -1,32 +1,24 @@
-
-// Fix: Use Firebase v9 compat imports to support v8 syntax.
+// Fix: Import firebase with the v8 namespaced syntax using the compat library.
 import firebase from 'firebase/compat/app';
 import 'firebase/compat/auth';
 import 'firebase/compat/firestore';
-import 'firebase/compat/analytics';
 
-// Your web app's Firebase configuration
+// For Firebase JS SDK v7.20.0 and later, measurementId is optional
 const firebaseConfig = {
   apiKey: "AIzaSyBKahYqPqmQec8wYY68bR9QgMMhTcr6604",
   authDomain: "nihongo-master-27068.firebaseapp.com",
   projectId: "nihongo-master-27068",
-  storageBucket: "nihongo-master-27068.firebasestorage.app",
+  storageBucket: "nihongo-master-27068.appspot.com",
   messagingSenderId: "386279107403",
   appId: "1:386279107403:web:6e8203d33c7364a75d96ce",
   measurementId: "G-0X8RY79SSN"
 };
 
-// Initialize Firebase
-if (!firebase.apps.length) {
-    firebase.initializeApp(firebaseConfig);
-    try {
-        firebase.analytics();
-    } catch (e) {
-        console.error('Failed to initialize Firebase Analytics', e);
-    }
-}
 
-const auth = firebase.auth();
-const db = firebase.firestore();
+// Fix: Use v8 syntax for initializing Firebase and getting services.
+const app = !firebase.apps.length ? firebase.initializeApp(firebaseConfig) : firebase.app();
+// Fix: Get services from the initialized 'app' instance for more robust connections.
+const auth = app.auth();
+const db = app.firestore();
 
-export { auth, db };
+export { app, auth, db };
