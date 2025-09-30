@@ -178,7 +178,7 @@ const ModuleCard: React.FC<ModuleCardProps> = ({ title, description, icon, onCli
                     <LockIcon className="text-4xl text-slate-500" />
                 </div>
             )}
-            <div>
+            <div className="flex-grow">
                 <div className={`w-12 h-12 rounded-lg flex items-center justify-center text-white mb-4 ${color}`}>
                     {icon}
                 </div>
@@ -192,10 +192,10 @@ const ModuleCard: React.FC<ModuleCardProps> = ({ title, description, icon, onCli
     );
 
     const Wrapper = locked && unlockHint ? Tooltip : React.Fragment;
-    const wrapperProps = locked && unlockHint ? { text: unlockHint } : {};
+    const wrapperProps = locked && unlockHint ? { text: unlockHint, className: 'h-full' } : {};
 
     return (
-        <div onClick={locked ? undefined : onClick}>
+        <div className="h-full" onClick={locked ? undefined : onClick}>
             <Wrapper {...wrapperProps}>
                 {cardContent}
             </Wrapper>

@@ -6,8 +6,8 @@ const USER_DATA_STORAGE_KEY = 'nihongoMasterUserData';
 
 const createInitialUserData = (): UserData => ({
     uid: 'local-user',
-    displayName: 'Nihongo Learner',
-    photoURL: `https://api.dicebear.com/7.x/initials/svg?seed=Nihongo%20Learner`,
+    displayName: 'Learner',
+    photoURL: "data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%2364748b'%3e%3cpath d='M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z'/%3e%3c/svg%3e",
     level: 1,
     xp: 0,
     hiraganaMastery: {},
