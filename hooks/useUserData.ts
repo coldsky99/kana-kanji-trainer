@@ -1,9 +1,13 @@
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import type { UserData, CharacterMastery } from '../types';
 import { XP_PER_LEVEL, ACHIEVEMENTS, SRS_LEVEL_DURATIONS_HOURS } from '../constants';
-import { useAuth, type NetlifyUser } from './useAuth';
 
-const initialUserData: Omit<UserData, 'uid' | 'displayName' | 'photoURL'> = {
+const USER_DATA_STORAGE_KEY = 'nihongoMasterUserData';
+
+const createInitialUserData = (): UserData => ({
+    uid: 'local-user',
+    displayName: 'Nihongo Learner',
+    photoURL: `https://api.dicebear.com/7.x/initials/svg?seed=Nihongo%20Learner`,
     level: 1,
     xp: 0,
     hiraganaMastery: {},
@@ -14,7 +18,8 @@ const initialUserData: Omit<UserData, 'uid' | 'displayName' | 'photoURL'> = {
     achievements: [],
     dailyProgress: [],
     hasCompletedOnboarding: false,
-};
+});
+
 
 interface UserDataContextType {
     userData: UserData | null;
@@ -28,68 +33,41 @@ interface UserDataContextType {
 const UserDataContext = createContext<UserDataContextType | undefined>(undefined);
 
 export const UserDataProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-    const { user, isInitialized: authInitialized } = useAuth();
     const [userData, setUserData] = useState<UserData | null>(null);
     const [isLoading, setIsLoading] = useState(true);
-
-    const fetchUserData = useCallback(async (netlifyUser: NetlifyUser) => {
+    
+    useEffect(() => {
         setIsLoading(true);
         try {
-            const response = await fetch(`/api/db/users/${netlifyUser.id}`, {
-                headers: { Authorization: `Bearer ${netlifyUser.token.access_token}` },
-            });
-
-            if (response.status === 404) {
-                const newUserProfile: Omit<UserData, keyof typeof initialUserData> = {
-                    uid: netlifyUser.id,
-                    displayName: netlifyUser.user_metadata.full_name || 'Anonymous User',
-                    photoURL: netlifyUser.user_metadata.avatar_url || `https://api.dicebear.com/7.x/initials/svg?seed=${netlifyUser.user_metadata.full_name || 'A'}`,
-                };
-                
-                const createResponse = await fetch('/api/db/users', {
-                    method: 'POST',
-                    headers: { 
-                      'Content-Type': 'application/json',
-                      Authorization: `Bearer ${netlifyUser.token.access_token}`
-                    },
-                    body: JSON.stringify({
-                        id: newUserProfile.uid,
-                        email: netlifyUser.email,
-                        displayName: newUserProfile.displayName,
-                        photoURL: newUserProfile.photoURL,
-                    }),
-                });
-                
-                if (!createResponse.ok) throw new Error('Failed to create user profile');
-                const createdUser = await createResponse.json();
-                setUserData(createdUser);
-
-            } else if (response.ok) {
-                const data = await response.json();
-                setUserData(data);
+            const savedData = localStorage.getItem(USER_DATA_STORAGE_KEY);
+            if (savedData) {
+                setUserData(JSON.parse(savedData));
             } else {
-                throw new Error('Failed to fetch user data');
+                const newUserData = createInitialUserData();
+                localStorage.setItem(USER_DATA_STORAGE_KEY, JSON.stringify(newUserData));
+                setUserData(newUserData);
             }
         } catch (error) {
-            console.error(error);
+            console.error("Error loading data from localStorage, resetting user data.", error);
+            const newUserData = createInitialUserData();
+            localStorage.setItem(USER_DATA_STORAGE_KEY, JSON.stringify(newUserData));
+            setUserData(newUserData);
         } finally {
             setIsLoading(false);
         }
     }, []);
-
-    useEffect(() => {
-        if (authInitialized) {
-            if (user) {
-                fetchUserData(user);
-            } else {
-                setUserData(null);
-                setIsLoading(false);
-            }
+    
+    const saveUserData = useCallback((data: UserData) => {
+        try {
+            localStorage.setItem(USER_DATA_STORAGE_KEY, JSON.stringify(data));
+        } catch (error) {
+            console.error("Failed to save user data to localStorage:", error);
         }
-    }, [user, authInitialized, fetchUserData]);
+    }, []);
+
 
     const addXp = useCallback(async (amount: number): Promise<string[]> => {
-        if (!user || !userData) return [];
+        if (!userData) return [];
 
         const newTotalXp = (userData.level - 1) * XP_PER_LEVEL + userData.xp + amount;
         const newLevel = Math.floor(newTotalXp / XP_PER_LEVEL) + 1;
@@ -120,31 +98,14 @@ export const UserDataProvider: React.FC<{ children: React.ReactNode }> = ({ chil
             }
         });
 
-        setUserData(updatedData); // Optimistic update
-
-        try {
-            await fetch(`/api/db/users/${user.id}`, {
-                method: 'PUT',
-                headers: {
-                    'Content-Type': 'application/json',
-                    Authorization: `Bearer ${user.token.access_token}`,
-                },
-                body: JSON.stringify({
-                    level: updatedData.level,
-                    xp: updatedData.xp,
-                    dailyProgress: updatedData.dailyProgress,
-                    achievements: updatedData.achievements,
-                }),
-            });
-        } catch (error) {
-            console.error("Failed to sync XP:", error);
-        }
+        setUserData(updatedData);
+        saveUserData(updatedData);
 
         return newAchievements;
-    }, [user, userData]);
+    }, [userData, saveUserData]);
 
     const updateMastery = useCallback(async (category: keyof Pick<UserData, 'hiraganaMastery' | 'katakanaMastery' | 'kanjiMastery'>, key: string, correct: boolean) => {
-        if (!user || !userData) return;
+        if (!userData) return;
         
         const masteryData = userData[category] as CharacterMastery;
         const currentItem = masteryData[key] || { level: 0, lastReviewed: null, nextReview: null };
@@ -163,68 +124,25 @@ export const UserDataProvider: React.FC<{ children: React.ReactNode }> = ({ chil
 
         const updatedMastery = { ...masteryData, [key]: currentItem };
         const updatedData = { ...userData, [category]: updatedMastery };
-        setUserData(updatedData); // Optimistic update
+        setUserData(updatedData);
+        saveUserData(updatedData);
 
-        try {
-            await fetch(`/api/db/users/${user.id}`, {
-                method: 'PUT',
-                headers: {
-                    'Content-Type': 'application/json',
-                    Authorization: `Bearer ${user.token.access_token}`,
-                },
-                body: JSON.stringify({ [category]: updatedMastery }),
-            });
-        } catch (error) {
-            console.error("Failed to sync mastery:", error);
-        }
-    }, [user, userData]);
+    }, [userData, saveUserData]);
 
     const completeOnboarding = useCallback(async () => {
-         if (!user || !userData) return;
+         if (!userData) return;
         
         const updatedData = { ...userData, hasCompletedOnboarding: true };
         setUserData(updatedData);
+        saveUserData(updatedData);
 
-        try {
-            await fetch(`/api/db/users/${user.id}`, {
-                method: 'PUT',
-                headers: {
-                    'Content-Type': 'application/json',
-                    Authorization: `Bearer ${user.token.access_token}`,
-                },
-                body: JSON.stringify({ hasCompletedOnboarding: true }),
-            });
-        } catch (error) {
-            console.error("Failed to complete onboarding:", error);
-        }
-    }, [user, userData]);
+    }, [userData, saveUserData]);
 
     const resetUserData = useCallback(async () => {
-       if (!user || !userData) return;
-
-        const dataToReset = {
-            ...initialUserData,
-        };
-
-        const updatedData = {
-            ...userData,
-            ...dataToReset,
-        };
-        setUserData(updatedData);
-
-         try {
-            await fetch(`/api/db/users/${user.id}`, {
-                method: 'PUT',
-                headers: {
-                    'Content-Type': 'application/json',
-                    Authorization: `Bearer ${user.token.access_token}`,
-                },
-                body: JSON.stringify(dataToReset),
-            });
-        } catch (error) {
-            console.error("Failed to reset user data:", error);
-        }
-    }, [user, userData]);
+        const newUserData = createInitialUserData();
+        setUserData(newUserData);
+        saveUserData(newUserData);
+    }, [saveUserData]);
 
     return React.createElement(UserDataContext.Provider, { value: { userData, addXp, updateMastery, isLoading, completeOnboarding, resetUserData } }, children);
 };

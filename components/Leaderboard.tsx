@@ -55,11 +55,12 @@ const Leaderboard: React.FC = () => {
         }
 
         return leaderboard.map((entry) => (
-            <tr key={entry.uid} className={`border-b dark:border-slate-700 ${entry.uid === user?.id ? 'bg-indigo-50 dark:bg-indigo-900/20' : ''}`}>
+// FIX: Use `entry.id` and `entry.photoUrl` to match the LeaderboardEntry type and API response.
+            <tr key={entry.id} className={`border-b dark:border-slate-700 ${entry.id === user?.id ? 'bg-indigo-50 dark:bg-indigo-900/20' : ''}`}>
                 <td className="p-3 font-bold text-center">{entry.rank}</td>
                 <td className="p-3">
                     <div className="flex items-center gap-3">
-                        <img src={entry.photoURL} alt={entry.displayName} className="w-8 h-8 rounded-full object-cover"/>
+                        <img src={entry.photoUrl} alt={entry.displayName} className="w-8 h-8 rounded-full object-cover"/>
                         <span className="font-medium truncate">{entry.displayName}</span>
                     </div>
                 </td>

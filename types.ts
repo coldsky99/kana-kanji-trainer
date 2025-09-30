@@ -76,7 +76,12 @@ export interface Kanji {
   onyomi: string;
   kunyomi: string;
 }
-
-export interface LeaderboardEntry extends Pick<UserData, 'uid' | 'displayName' | 'photoURL' | 'level' | 'xp'> {
+// FIX: Add and export the LeaderboardEntry interface.
+export interface LeaderboardEntry {
   rank: number;
+  id: string;
+  displayName: string;
+  photoUrl: string;
+  level: number;
+  xp: number;
 }
