@@ -1,13 +1,9 @@
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
-// Fix: Import firebase v8 namespaced object to access Firestore types.
-import firebase from 'firebase/compat/app';
-import 'firebase/compat/firestore';
 import type { UserData, CharacterMastery } from '../types';
 import { XP_PER_LEVEL, ACHIEVEMENTS, SRS_LEVEL_DURATIONS_HOURS } from '../constants';
 import { useAuth } from './useAuth';
 import { db } from '../firebase';
-// Fix: Remove v9 modular imports and define FirestoreError for v8.
-type FirestoreError = firebase.firestore.FirestoreError;
+import { doc, onSnapshot, setDoc, updateDoc, type FirestoreError } from 'firebase/firestore';
 
 const initialUserData: Omit<UserData, 'uid' | 'displayName' | 'photoURL'> = {
     level: 1,
@@ -46,12 +42,12 @@ export const UserDataProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         }
 
         setIsLoading(true);
-        // Fix: Use v8 syntax to get a document reference.
-        const userDocRef = db.collection('users').doc(user.uid);
+        // Use the v9 modular doc function to get a document reference.
+        const userDocRef = doc(db, 'users', user.uid);
         
-        // Fix: Use v8 syntax for onSnapshot.
-        const unsubscribe = userDocRef.onSnapshot((docSnap) => {
-            if (docSnap.exists) {
+        // Use the v9 modular onSnapshot function to listen for real-time updates.
+        const unsubscribe = onSnapshot(userDocRef, (docSnap) => {
+            if (docSnap.exists()) {
                 setUserData(docSnap.data() as UserData);
             } else {
                 const newUserProfile: UserData = {
@@ -60,8 +56,8 @@ export const UserDataProvider: React.FC<{ children: React.ReactNode }> = ({ chil
                     displayName: user.displayName || 'Anonymous User',
                     photoURL: user.photoURL || `https://api.dicebear.com/7.x/initials/svg?seed=${user.displayName || 'A'}`,
                 };
-                // Fix: Use v8 syntax for setDoc.
-                userDocRef.set(newUserProfile).then(() => {
+                // Use the v9 modular setDoc function to create the document.
+                setDoc(userDocRef, newUserProfile).then(() => {
                     setUserData(newUserProfile);
                 }).catch((error: FirestoreError) => console.error("Error creating user document:", error.code, error.message));
             }
@@ -77,8 +73,8 @@ export const UserDataProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     const addXp = useCallback(async (amount: number): Promise<string[]> => {
         if (!user || !userData) return [];
         
-        // Fix: Use v8 syntax to get a document reference.
-        const userDocRef = db.collection('users').doc(user.uid);
+        // Use the v9 modular doc function to get a document reference.
+        const userDocRef = doc(db, 'users', user.uid);
         let newAchievements: string[] = [];
 
         const today = new Date().toISOString().split('T')[0];
@@ -112,8 +108,8 @@ export const UserDataProvider: React.FC<{ children: React.ReactNode }> = ({ chil
             }
         });
 
-        // Fix: Use v8 syntax for updateDoc.
-        await userDocRef.update({
+        // Use the v9 modular updateDoc function to update the document.
+        await updateDoc(userDocRef, {
             xp: newXp,
             level: newLevel,
             dailyProgress: newDailyProgress,
@@ -146,34 +142,31 @@ export const UserDataProvider: React.FC<{ children: React.ReactNode }> = ({ chil
             nextReview: nextReviewDate.toISOString()
         };
 
-        // Fix: Use v8 syntax to get a document reference.
-        const userDocRef = db.collection('users').doc(user.uid);
-        // Fix: Use v8 syntax for updateDoc with a dynamic key.
-        await userDocRef.update({
+        // Use the v9 modular doc and updateDoc functions.
+        const userDocRef = doc(db, 'users', user.uid);
+        await updateDoc(userDocRef, {
             [`${category}.${key}`]: newMasteryItem
         });
     }, [user, userData]);
     
     const completeOnboarding = useCallback(async () => {
         if (!user) return;
-        // Fix: Use v8 syntax to get a document reference.
-        const userDocRef = db.collection('users').doc(user.uid);
-        // Fix: Use v8 syntax for updateDoc.
-        await userDocRef.update({ hasCompletedOnboarding: true });
+        // Use the v9 modular doc and updateDoc functions.
+        const userDocRef = doc(db, 'users', user.uid);
+        await updateDoc(userDocRef, { hasCompletedOnboarding: true });
     }, [user]);
 
     const resetUserData = useCallback(async () => {
         if (!user) return;
-        // Fix: Use v8 syntax to get a document reference.
-        const userDocRef = db.collection('users').doc(user.uid);
+        // Use the v9 modular doc and setDoc functions.
+        const userDocRef = doc(db, 'users', user.uid);
         const freshData: UserData = {
             ...initialUserData,
             uid: user.uid,
             displayName: user.displayName || 'Anonymous User',
             photoURL: user.photoURL || `https://api.dicebear.com/7.x/initials/svg?seed=${user.displayName || 'A'}`,
         };
-        // Fix: Use v8 syntax for setDoc.
-        await userDocRef.set(freshData);
+        await setDoc(userDocRef, freshData);
     }, [user]);
 
     return React.createElement(UserDataContext.Provider, { value: { userData, addXp, updateMastery, isLoading, completeOnboarding, resetUserData } }, children);

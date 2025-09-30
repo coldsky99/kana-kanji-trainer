@@ -1,8 +1,11 @@
 import React, { useState, type FormEvent } from 'react';
 import { auth } from '../firebase';
-// Fix: Import firebase v8 namespaced object to access Auth providers and methods.
-import firebase from 'firebase/compat/app';
-import 'firebase/compat/auth';
+import { 
+  GoogleAuthProvider, 
+  signInWithPopup, 
+  createUserWithEmailAndPassword, 
+  signInWithEmailAndPassword 
+} from 'firebase/auth';
 import { useLocalization } from '../hooks/useLocalization';
 
 const LoginView: React.FC = () => {
@@ -15,11 +18,11 @@ const LoginView: React.FC = () => {
   const [loading, setLoading] = useState(false);
 
   const handleGoogleSignIn = async () => {
-    // Fix: Use v8 syntax for GoogleAuthProvider.
-    const provider = new firebase.auth.GoogleAuthProvider();
+    // Use the v9 modular GoogleAuthProvider.
+    const provider = new GoogleAuthProvider();
     try {
-      // Fix: Use v8 syntax for signInWithPopup.
-      await auth.signInWithPopup(provider);
+      // Use the v9 modular signInWithPopup function.
+      await signInWithPopup(auth, provider);
     } catch (error: any) {
       console.error("Error during Google sign-in:", error.code, error.message);
     }
@@ -48,11 +51,11 @@ const LoginView: React.FC = () => {
           setLoading(false);
           return;
         }
-        // Fix: Use v8 syntax for createUserWithEmailAndPassword.
-        await auth.createUserWithEmailAndPassword(email, password);
+        // Use the v9 modular createUserWithEmailAndPassword function.
+        await createUserWithEmailAndPassword(auth, email, password);
       } else {
-        // Fix: Use v8 syntax for signInWithEmailAndPassword.
-        await auth.signInWithEmailAndPassword(email, password);
+        // Use the v9 modular signInWithEmailAndPassword function.
+        await signInWithEmailAndPassword(auth, email, password);
       }
     } catch (err: any) {
       let errorMessage: string;

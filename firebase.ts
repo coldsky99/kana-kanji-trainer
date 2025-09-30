@@ -1,7 +1,6 @@
-// Fix: Import firebase with the v8 namespaced syntax using the compat library.
-import firebase from 'firebase/compat/app';
-import 'firebase/compat/auth';
-import 'firebase/compat/firestore';
+import { initializeApp } from "firebase/app";
+import { getAuth } from "firebase/auth";
+import { getFirestore } from "firebase/firestore";
 
 // For Firebase JS SDK v7.20.0 and later, measurementId is optional
 const firebaseConfig = {
@@ -15,10 +14,9 @@ const firebaseConfig = {
 };
 
 
-// Fix: Use v8 syntax for initializing Firebase and getting services.
-const app = !firebase.apps.length ? firebase.initializeApp(firebaseConfig) : firebase.app();
-// Fix: Get services from the initialized 'app' instance for more robust connections.
-const auth = app.auth();
-const db = app.firestore();
+// Initialize Firebase using the modular v9 SDK.
+const app = initializeApp(firebaseConfig);
+const auth = getAuth(app);
+const db = getFirestore(app);
 
-export { app, auth, db };
+export { auth, db };

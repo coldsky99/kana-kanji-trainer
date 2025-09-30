@@ -1,10 +1,9 @@
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import { auth } from '../firebase';
-import firebase from 'firebase/compat/app';
-import 'firebase/compat/auth';
+import { onAuthStateChanged, signOut, updateProfile, type User } from 'firebase/auth';
 
 interface AuthContextType {
-    user: firebase.User | null;
+    user: User | null;
     loading: boolean;
     signOut: () => Promise<void>;
 }
@@ -12,11 +11,12 @@ interface AuthContextType {
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-    const [user, setUser] = useState<firebase.User | null>(null);
+    const [user, setUser] = useState<User | null>(null);
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
-        const unsubscribe = auth.onAuthStateChanged(async (firebaseUser) => {
+        // Use the v9 modular onAuthStateChanged function.
+        const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
             if (firebaseUser) {
                 const needsUpdate = !firebaseUser.displayName || !firebaseUser.photoURL;
                 const reloadFlag = `reload_${firebaseUser.uid}`;
@@ -26,7 +26,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
                         const displayName = firebaseUser.displayName || `User${Math.floor(Math.random() * 10000)}`;
                         const photoURL = firebaseUser.photoURL || `https://api.dicebear.com/7.x/bottts/svg?seed=${firebaseUser.uid}`;
                         
-                        await firebaseUser.updateProfile({
+                        // Use the v9 modular updateProfile function.
+                        await updateProfile(firebaseUser, {
                             displayName,
                             photoURL,
                         });
@@ -55,15 +56,16 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         return () => unsubscribe();
     }, []);
 
-    const signOut = useCallback(async () => {
+    const handleSignOut = useCallback(async () => {
         try {
-            await auth.signOut();
+            // Use the v9 modular signOut function.
+            await signOut(auth);
         } catch (error) {
             console.error('Error signing out:', error);
         }
     }, []);
 
-    const value = { user, loading, signOut };
+    const value = { user, loading, signOut: handleSignOut };
 
     return (
         <AuthContext.Provider value={value}>

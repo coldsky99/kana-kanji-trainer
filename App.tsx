@@ -1,11 +1,11 @@
 
 
+
 import React from 'react';
 import { UserDataProvider, useUserData } from './hooks/useUserData';
 import { LocalizationProvider, useLocalization } from './hooks/useLocalization';
 import { AuthProvider, useAuth } from './hooks/useAuth';
 import Header from './components/Header';
-// Fix: Use default import for Dashboard component.
 import Dashboard from './components/Dashboard';
 import KanaView from './components/KanaView';
 import KanjiView from './components/KanjiView';
@@ -13,9 +13,9 @@ import WordBuilderView from './components/WordBuilderView';
 import SentenceView from './components/SentenceView';
 import OnboardingModal from './components/OnboardingModal';
 import { LanguageSelectionModal } from './components/LanguageSelectionModal';
-import LoginView from './components/LoginView';
-// Fix: Import KanaType for type casting.
 import { AppView, KanaType } from './types';
+// FIX: Import LoginView to resolve 'Cannot find name' error.
+import LoginView from './components/LoginView';
 
 const AppContent: React.FC = () => {
   const { user, loading: authLoading } = useAuth();
@@ -31,8 +31,6 @@ const AppContent: React.FC = () => {
   const [currentView, setCurrentView] = React.useState<AppView>(AppView.Dashboard);
   const [showOnboarding, setShowOnboarding] = React.useState(false);
 
-  console.log(`[App] Rendering - authLoading: ${authLoading}, user: ${user ? user.uid : 'null'}, userDataLoading: ${userDataLoading}`);
-
 
   React.useEffect(() => {
     if (langInitialized && userData && !userData.hasCompletedOnboarding && !showLanguageSelection) {
@@ -46,7 +44,7 @@ const AppContent: React.FC = () => {
       case AppView.Katakana:
         return (
           <KanaView
-            // Fix: Cast AppView enum to KanaType enum. Their string values are compatible,
+            // Cast AppView enum to KanaType enum. Their string values are compatible,
             // but the types do not overlap, so a cast to 'unknown' is required first.
             kanaType={currentView as unknown as KanaType}
           />

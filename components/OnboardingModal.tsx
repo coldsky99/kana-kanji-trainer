@@ -1,15 +1,13 @@
 
+
 import React, { useState } from 'react';
-// Fix: Import TranslationKey for type casting.
 import { useLocalization, type TranslationKey } from '../hooks/useLocalization';
 import { StarIcon, LanguageIcon, ChartBarIcon, AcademicCapIcon } from './icons';
 
-// Fix: Add props interface for the component.
 interface OnboardingModalProps {
     onComplete: () => void;
 }
 
-// Fix: Update component signature to accept props and destructure onComplete.
 const OnboardingModal: React.FC<OnboardingModalProps> = ({ onComplete }) => {
     const { t } = useLocalization();
     const [step, setStep] = useState(0);
@@ -43,7 +41,6 @@ const OnboardingModal: React.FC<OnboardingModalProps> = ({ onComplete }) => {
         if (step < steps.length - 1) {
             setStep(step + 1);
         } else {
-            // Fix: Call the onComplete prop instead of using the hook directly.
             onComplete();
         }
     };
@@ -52,9 +49,7 @@ const OnboardingModal: React.FC<OnboardingModalProps> = ({ onComplete }) => {
         <div className="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50 p-4">
             <div className="bg-white dark:bg-slate-800 p-8 rounded-lg shadow-2xl w-full max-w-md text-center flex flex-col items-center">
                 <div className="mb-6">{currentStep.icon}</div>
-                {/* Fix: Cast string to TranslationKey for the 't' function. */}
                 <h2 className="text-2xl font-bold mb-4">{t(currentStep.titleKey as TranslationKey)}</h2>
-                {/* Fix: Cast string to TranslationKey for the 't' function. */}
                 <p className="text-slate-600 dark:text-slate-300 mb-8">{t(currentStep.textKey as TranslationKey)}</p>
 
                 <div className="flex justify-center mb-6">
