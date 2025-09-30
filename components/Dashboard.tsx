@@ -1,44 +1,225 @@
 
 
-import React, { useState } from 'react';
+import React from 'react';
 import { useUserData } from '../hooks/useUserData';
-import { useLocalization, type TranslationKey } from '../hooks/useLocalization';
-// FIX: Import the DailyProgress type to correctly type the `calculateStreak` function parameter.
-import { AppView, type DailyProgress } from '../types';
-import { HIRAGANA_DATA, KATAKANA_DATA, KANJI_DATA, XP_PER_LEVEL, ACHIEVEMENTS } from '../constants';
-import { TrophyIcon, StarIcon, BookOpenIcon, LockIcon, QuestionMarkCircleIcon } from './icons';
+import { useLocalization } from '../hooks/useLocalization';
+import { AppView } from '../types';
+import type { MasteryItem } from '../types';
+import { XP_PER_LEVEL, ACHIEVEMENTS, HIRAGANA_DATA, KATAKANA_DATA, KANJI_DATA } from '../constants';
+import { BookOpenIcon, StarIcon, LockIcon } from './icons';
 import Tooltip from './Tooltip';
+import type { TranslationKey } from '../hooks/useLocalization';
 
-interface ResetProgressModalProps {
-    onClose: () => void;
-    onConfirm: () => void;
+interface DashboardProps {
+  setView: (view: AppView) => void;
 }
 
-const ResetProgressModal: React.FC<ResetProgressModalProps> = ({ onClose, onConfirm }) => {
+const Dashboard: React.FC<DashboardProps> = ({ setView }) => {
+  const { userData, resetUserData } = useUserData();
+  const { t } = useLocalization();
+  const [showResetModal, setShowResetModal] = React.useState(false);
+
+  if (!userData) {
+    return null; // App.tsx handles the main loading state
+  }
+
+  const progressPercentage = (userData.xp / XP_PER_LEVEL) * 100;
+
+  const userAchievements = ACHIEVEMENTS.filter(ach => userData.achievements.includes(ach.id));
+
+  // FIX: Explicitly type `item` as `MasteryItem` to resolve a TypeScript inference issue where it was being inferred as `unknown`.
+  const hiraganaMasteryCount = Object.values(userData.hiraganaMastery).filter((item: MasteryItem) => item.level > 0).length;
+  const katakanaMasteryCount = Object.values(userData.katakanaMastery).filter((item: MasteryItem) => item.level > 0).length;
+  const kanjiMasteryCount = Object.values(userData.kanjiMastery).filter((item: MasteryItem) => item.level > 0).length;
+
+  const hiraganaMastered = hiraganaMasteryCount >= HIRAGANA_DATA.length;
+  const katakanaMastered = katakanaMasteryCount >= KATAKANA_DATA.length;
+
+  const isWordsUnlocked = hiraganaMastered && katakanaMastered && (kanjiMasteryCount / KANJI_DATA.length) * 100 >= 20;
+  const isSentencesUnlocked = hiraganaMastered && katakanaMastered && (kanjiMasteryCount / KANJI_DATA.length) * 100 >= 50;
+
+  const handleReset = () => {
+    resetUserData();
+    setShowResetModal(false);
+  };
+
+  return (
+    <div className="space-y-8">
+      {/* Welcome and Progress */}
+      <div className="bg-white dark:bg-slate-800 shadow-lg rounded-xl p-6 border border-slate-200 dark:border-slate-700">
+        <h1 className="text-2xl sm:text-3xl font-bold text-slate-800 dark:text-slate-100 mb-2">
+          {t('dashboard.welcome', { name: userData.displayName })}
+        </h1>
+        <div className="flex items-center gap-6 mt-4">
+          <div className="flex-shrink-0">
+            <img className="h-16 w-16 rounded-full object-cover border-4 border-indigo-200 dark:border-indigo-700 shadow-sm" src={userData.photoURL} alt={userData.displayName} />
+          </div>
+          <div className="flex-grow">
+            <div className="flex justify-between items-center mb-1">
+              <span className="text-lg font-semibold text-indigo-600 dark:text-indigo-400">{t('dashboard.level')} {userData.level}</span>
+              <span className="text-sm font-medium text-slate-500 dark:text-slate-400">{userData.xp} / {XP_PER_LEVEL} XP</span>
+            </div>
+            <div className="w-full bg-slate-200 dark:bg-slate-700 rounded-full h-3 overflow-hidden">
+              <div
+                className="bg-gradient-to-r from-indigo-500 to-purple-500 h-3 rounded-full transition-all duration-500"
+                style={{ width: `${progressPercentage}%` }}
+              ></div>
+            </div>
+            <p className="text-xs text-right text-slate-500 mt-1">{t('dashboard.progress.toNextLevel')}</p>
+          </div>
+        </div>
+      </div>
+      
+      {/* Learning Modules */}
+      <div>
+        <h2 className="text-2xl font-bold text-slate-800 dark:text-slate-200 mb-4">{t('dashboard.modules')}</h2>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          <ModuleCard
+            title={t('dashboard.module.learnHiragana.title')}
+            description={t('dashboard.module.learnHiragana.description')}
+            icon={<div className="text-3xl">あ</div>}
+            onClick={() => setView(AppView.Hiragana)}
+            color="bg-red-500"
+          />
+          <ModuleCard
+            title={t('dashboard.module.learnKatakana.title')}
+            description={t('dashboard.module.learnKatakana.description')}
+            icon={<div className="text-3xl">ア</div>}
+            onClick={() => setView(AppView.Katakana)}
+            color="bg-blue-500"
+          />
+          <ModuleCard
+            title={t('dashboard.module.learnKanji.title')}
+            description={t('dashboard.module.learnKanji.description')}
+            icon={<div className="text-3xl">漢</div>}
+            onClick={() => setView(AppView.Kanji)}
+            color="bg-green-500"
+          />
+          <ModuleCard
+            title={t('dashboard.module.buildWords.title')}
+            description={t('dashboard.module.buildWords.description')}
+            icon={<StarIcon className="text-2xl"/>}
+            onClick={() => isWordsUnlocked && setView(AppView.Words)}
+            locked={!isWordsUnlocked}
+            unlockHint={t('dashboard.unlocks.hint.words')}
+            color="bg-yellow-500"
+          />
+          <ModuleCard
+            title={t('dashboard.module.practiceSentences.title')}
+            description={t('dashboard.module.practiceSentences.description')}
+            icon={<BookOpenIcon className="text-2xl"/>}
+            onClick={() => isSentencesUnlocked && setView(AppView.Sentences)}
+            locked={!isSentencesUnlocked}
+            unlockHint={t('dashboard.unlocks.hint.sentences')}
+            color="bg-purple-500"
+          />
+        </div>
+      </div>
+      
+      {/* Achievements */}
+      <div>
+        <h2 className="text-2xl font-bold text-slate-800 dark:text-slate-200 mb-4">{t('dashboard.achievements.title')}</h2>
+        {userAchievements.length > 0 ? (
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4">
+            {userAchievements.map(ach => (
+              <Tooltip key={ach.id} text={t(ach.descriptionKey as TranslationKey)}>
+                <div className="flex flex-col items-center justify-center p-4 bg-white dark:bg-slate-800 rounded-lg shadow aspect-square text-center border border-slate-200 dark:border-slate-700">
+                  <div className="text-3xl text-yellow-500 mb-2">{ach.icon}</div>
+                  <p className="text-xs font-semibold text-slate-700 dark:text-slate-300">{t(ach.nameKey as TranslationKey)}</p>
+                </div>
+              </Tooltip>
+            ))}
+          </div>
+        ) : (
+          <div className="bg-white dark:bg-slate-800 p-6 rounded-lg text-center border border-dashed border-slate-300 dark:border-slate-700">
+            <p className="text-slate-500 dark:text-slate-400">{t('dashboard.achievements.none')}</p>
+          </div>
+        )}
+      </div>
+
+      {/* Settings */}
+      <div className="bg-white dark:bg-slate-800 shadow-lg rounded-xl p-6 border border-red-200 dark:border-red-700/50">
+        <h3 className="text-lg font-bold text-red-600 dark:text-red-400">{t('dashboard.settings.title')}</h3>
+        <p className="text-sm text-slate-600 dark:text-slate-400 mt-2 mb-4">{t('dashboard.settings.reset.description')}</p>
+        <button
+          onClick={() => setShowResetModal(true)}
+          className="bg-red-600 text-white px-4 py-2 rounded-lg font-semibold hover:bg-red-700 transition-colors text-sm"
+        >
+          {t('dashboard.settings.reset.button')}
+        </button>
+      </div>
+      
+      {showResetModal && (
+        <ResetModal
+          onConfirm={handleReset}
+          onCancel={() => setShowResetModal(false)}
+        />
+      )}
+    </div>
+  );
+};
+
+interface ModuleCardProps {
+    title: string;
+    description: string;
+    icon: React.ReactNode;
+    onClick: () => void;
+    color?: string;
+    locked?: boolean;
+    unlockHint?: string;
+}
+
+const ModuleCard: React.FC<ModuleCardProps> = ({ title, description, icon, onClick, color = 'bg-gray-500', locked, unlockHint }) => {
     const { t } = useLocalization();
+    const cardContent = (
+        <div className={`relative p-6 bg-white dark:bg-slate-800 rounded-xl shadow-md flex flex-col justify-between h-full transition-all duration-300 border border-slate-200 dark:border-slate-700 ${locked ? 'cursor-not-allowed' : 'hover:shadow-xl hover:-translate-y-1 cursor-pointer'}`}>
+            {locked && (
+                <div className="absolute inset-0 bg-slate-400/30 dark:bg-slate-900/50 backdrop-blur-sm rounded-xl z-10 flex items-center justify-center">
+                    <LockIcon className="text-4xl text-slate-500" />
+                </div>
+            )}
+            <div>
+                <div className={`w-12 h-12 rounded-lg flex items-center justify-center text-white mb-4 ${color}`}>
+                    {icon}
+                </div>
+                <h3 className="text-lg font-bold text-slate-800 dark:text-slate-100">{title}</h3>
+                <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">{description}</p>
+            </div>
+            <div className={`mt-4 text-right font-semibold text-sm ${locked ? 'text-slate-400' : 'text-indigo-600 dark:text-indigo-400'}`}>
+                {locked ? t('dashboard.locked') : 'Start Learning →'}
+            </div>
+        </div>
+    );
+
+    const Wrapper = locked && unlockHint ? Tooltip : React.Fragment;
+    const wrapperProps = locked && unlockHint ? { text: unlockHint } : {};
 
     return (
+        <div onClick={locked ? undefined : onClick}>
+            <Wrapper {...wrapperProps}>
+                {cardContent}
+            </Wrapper>
+        </div>
+    );
+};
+
+const ResetModal: React.FC<{ onConfirm: () => void, onCancel: () => void }> = ({ onConfirm, onCancel }) => {
+    const { t } = useLocalization();
+    return (
         <div className="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50 p-4">
-            <div className="bg-white dark:bg-slate-800 p-6 rounded-lg shadow-2xl w-full max-w-md relative text-center">
-                <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-red-100 dark:bg-red-900/50">
-                    <i className="fa-solid fa-triangle-exclamation h-6 w-6 text-2xl text-red-600 dark:text-red-400"></i>
-                </div>
-                <h3 className="mt-5 text-xl font-semibold leading-6 text-slate-900 dark:text-slate-100">{t('resetModal.title')}</h3>
-                <div className="mt-2">
-                    <p className="text-sm text-slate-500 dark:text-slate-400">{t('resetModal.warning')}</p>
-                </div>
-                <div className="mt-6 flex justify-center gap-4">
+            <div className="bg-white dark:bg-slate-800 p-6 rounded-lg shadow-2xl w-full max-w-md text-center">
+                <h2 className="text-xl font-bold mb-2 text-red-600 dark:text-red-400">{t('resetModal.title')}</h2>
+                <p className="text-slate-600 dark:text-slate-300 mb-6">{t('resetModal.warning')}</p>
+                <div className="flex justify-center gap-4">
                     <button
-                        type="button"
-                        className="inline-flex justify-center rounded-md bg-white dark:bg-slate-700 px-4 py-2 text-sm font-semibold text-slate-900 dark:text-slate-200 shadow-sm ring-1 ring-inset ring-slate-300 dark:ring-slate-600 hover:bg-slate-50 dark:hover:bg-slate-600"
-                        onClick={onClose}
+                        onClick={onCancel}
+                        className="bg-slate-200 dark:bg-slate-600 text-slate-800 dark:text-slate-200 px-6 py-2 rounded-lg font-semibold hover:bg-slate-300 dark:hover:bg-slate-500 transition-colors"
                     >
                         {t('resetModal.cancel')}
                     </button>
                     <button
-                        type="button"
-                        className="inline-flex justify-center rounded-md bg-red-600 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-red-500"
-                        onClick={() => { onConfirm(); onClose(); }}
+                        onClick={onConfirm}
+                        className="bg-red-600 text-white px-6 py-2 rounded-lg font-semibold hover:bg-red-700 transition-colors"
                     >
                         {t('resetModal.confirm')}
                     </button>
@@ -48,223 +229,5 @@ const ResetProgressModal: React.FC<ResetProgressModalProps> = ({ onClose, onConf
     );
 };
 
-// Helper component for individual stats
-const StatCard: React.FC<{ label: string; value: string | number; icon: React.ReactNode }> = ({ label, value, icon }) => (
-    <div className="bg-white dark:bg-slate-800 p-4 rounded-lg shadow-md flex items-center space-x-4">
-        <div className="text-2xl text-indigo-500">{icon}</div>
-        <div>
-            <p className="text-sm text-slate-500 dark:text-slate-400">{label}</p>
-            <p className="text-xl font-bold">{value}</p>
-        </div>
-    </div>
-);
-
-// Helper component for learning modules
-const ModuleCard: React.FC<{
-    title: string;
-    description: string;
-    onClick: () => void;
-    unlocked: boolean;
-    progressPercent: number;
-    unlockHint?: string;
-}> = ({ title, description, onClick, unlocked, progressPercent, unlockHint }) => (
-    <div
-        onClick={unlocked ? onClick : undefined}
-        className={`relative p-6 rounded-lg shadow-lg transition-all duration-300 ${unlocked ? 'bg-white dark:bg-slate-800 cursor-pointer hover:shadow-xl hover:-translate-y-1' : 'bg-slate-100 dark:bg-slate-800/50'}`}
-    >
-        {!unlocked && (
-            <div className="absolute top-4 right-4 flex items-center gap-2">
-                <LockIcon className="text-slate-500 dark:text-slate-400" />
-                {unlockHint && (
-                    <Tooltip text={unlockHint}>
-                        <QuestionMarkCircleIcon className="text-slate-500 dark:text-slate-400 cursor-help" />
-                    </Tooltip>
-                )}
-            </div>
-        )}
-        <h3 className={`text-xl font-bold mb-2 ${!unlocked && 'text-slate-500 dark:text-slate-400'}`}>{title}</h3>
-        <p className={`text-sm text-slate-600 dark:text-slate-300 mb-4 ${!unlocked && 'opacity-60'}`}>{description}</p>
-        <div className="w-full bg-slate-200 dark:bg-slate-700 rounded-full h-2">
-            <div className="bg-indigo-500 h-2 rounded-full" style={{ width: `${progressPercent}%` }}></div>
-        </div>
-    </div>
-);
-
-
-const Dashboard: React.FC<{ setView: (v: AppView) => void }> = ({ setView }) => {
-    const { userData, resetUserData } = useUserData();
-    const { t } = useLocalization();
-    const [isResetModalOpen, setIsResetModalOpen] = useState(false);
-
-    // Guard against null userData
-    if (!userData) {
-        return null; 
-    }
-
-    // --- Calculations ---
-    const hiraMasteryCount = Object.keys(userData.hiraganaMastery).length;
-    const kataMasteryCount = Object.keys(userData.katakanaMastery).length;
-    const kanjiMasteryCount = Object.keys(userData.kanjiMastery).length;
-
-    const hiraPct = (hiraMasteryCount / HIRAGANA_DATA.length) * 100;
-    const kataPct = (kataMasteryCount / KATAKANA_DATA.length) * 100;
-    const kanjiPct = (kanjiMasteryCount / KANJI_DATA.length) * 100;
-
-    const wordsUnlocked = hiraPct >= 100 && kataPct >= 100 && kanjiPct >= 20;
-    const sentencesUnlocked = hiraPct >= 100 && kataPct >= 100 && kanjiPct >= 50;
-    
-    // FIX: Explicitly type `dailyProgress` parameter to fix `new Date()` errors.
-    const calculateStreak = (dailyProgress: DailyProgress[]): number => {
-        if (dailyProgress.length === 0) return 0;
-
-        const dates = [...new Set(dailyProgress.map(d => d.date))].sort((a, b) => new Date(b).getTime() - new Date(a).getTime());
-        const today = new Date();
-        today.setHours(0, 0, 0, 0);
-        const yesterday = new Date(today);
-        yesterday.setDate(yesterday.getDate() - 1);
-        
-        if (dates.length === 0) return 0;
-        let lastDate = new Date(dates[0]);
-        lastDate.setHours(0, 0, 0, 0);
-
-        if (lastDate.getTime() !== today.getTime() && lastDate.getTime() !== yesterday.getTime()) {
-            return 0;
-        }
-
-        let streak = 1;
-        for (let i = 1; i < dates.length; i++) {
-            const currentDate = new Date(dates[i]);
-            currentDate.setHours(0, 0, 0, 0);
-            
-            const expectedPreviousDate = new Date(lastDate);
-            expectedPreviousDate.setDate(expectedPreviousDate.getDate() - 1);
-            
-            if (currentDate.getTime() === expectedPreviousDate.getTime()) {
-                streak++;
-                lastDate = currentDate;
-            } else if (currentDate.getTime() < expectedPreviousDate.getTime()) {
-                break;
-            }
-        }
-        return streak;
-    };
-    
-    const dailyStreak = calculateStreak(userData.dailyProgress);
-    const earnedAchievements = ACHIEVEMENTS.filter(ach => userData.achievements.includes(ach.id));
-    
-    return (
-        <div className="space-y-8">
-            {/* Stats Panel */}
-            <section>
-                <h2 className="text-2xl sm:text-3xl font-bold mb-4">{t('dashboard.welcome', { name: userData.displayName.split(' ')[0] })}</h2>
-                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
-                    <StatCard label={t('dashboard.stats.level')} value={userData.level} icon={<TrophyIcon />} />
-                    <StatCard label={t('dashboard.stats.xp')} value={`${userData.xp} / ${XP_PER_LEVEL}`} icon={<StarIcon />} />
-                    <StatCard label={t('dashboard.stats.streak')} value={`${dailyStreak} Days`} icon={<i className="fa-solid fa-fire"></i>} />
-                    <StatCard label={t('dashboard.stats.characters')} value={hiraMasteryCount + kataMasteryCount + kanjiMasteryCount} icon={<BookOpenIcon />} />
-                </div>
-                 <div className="mt-4">
-                    <p className="text-sm text-slate-600 dark:text-slate-400 mb-1">{t('dashboard.progress.toNextLevel')}</p>
-                    <div className="w-full bg-slate-200 dark:bg-slate-700 rounded-full h-2.5">
-                        <div className="bg-green-500 h-2.5 rounded-full" style={{ width: `${(userData.xp / XP_PER_LEVEL) * 100}%` }}></div>
-                    </div>
-                </div>
-            </section>
-
-            {/* Learning Modules */}
-            <section>
-                <h2 className="text-2xl sm:text-3xl font-bold mb-4">{t('dashboard.modules')}</h2>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <ModuleCard 
-                        title={t('dashboard.module.learnHiragana.title')}
-                        description={t('dashboard.module.learnHiragana.description')}
-                        onClick={() => setView(AppView.Hiragana)}
-                        unlocked={true}
-                        progressPercent={hiraPct}
-                    />
-                    <ModuleCard 
-                        title={t('dashboard.module.learnKatakana.title')}
-                        description={t('dashboard.module.learnKatakana.description')}
-                        onClick={() => setView(AppView.Katakana)}
-                        unlocked={true}
-                        progressPercent={kataPct}
-                    />
-                     <ModuleCard 
-                        title={t('dashboard.module.learnKanji.title')}
-                        description={t('dashboard.module.learnKanji.description')}
-                        onClick={() => setView(AppView.Kanji)}
-                        unlocked={true}
-                        progressPercent={kanjiPct}
-                    />
-                     <ModuleCard 
-                        title={t('dashboard.module.buildWords.title')}
-                        description={t('dashboard.module.buildWords.description')}
-                        onClick={() => setView(AppView.Words)}
-                        unlocked={wordsUnlocked}
-                        progressPercent={(wordsUnlocked || (hiraPct === 100 && kataPct === 100)) ? (kanjiPct / 20 * 100) : ((hiraPct + kataPct)/2)}
-                        unlockHint={t('dashboard.unlocks.hint.words')}
-                    />
-                    <ModuleCard 
-                        title={t('dashboard.module.practiceSentences.title')}
-                        description={t('dashboard.module.practiceSentences.description')}
-                        onClick={() => setView(AppView.Sentences)}
-                        unlocked={sentencesUnlocked}
-                        progressPercent={(sentencesUnlocked || (hiraPct === 100 && kataPct === 100)) ? (kanjiPct / 50 * 100) : ((hiraPct + kataPct)/2)}
-                        unlockHint={t('dashboard.unlocks.hint.sentences')}
-                    />
-                </div>
-            </section>
-
-            {/* Achievements Panel */}
-            <section>
-                <h2 className="text-2xl sm:text-3xl font-bold mb-4">{t('dashboard.achievements.title')}</h2>
-                <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 gap-4">
-                    {earnedAchievements.length > 0 ? (
-                        earnedAchievements.map(ach => (
-                            <Tooltip key={ach.id} text={t(ach.descriptionKey as TranslationKey)}>
-                                <div className="aspect-square">
-                                    <div className="w-full h-full flex flex-col items-center text-center p-2 sm:p-3 bg-white dark:bg-slate-800 rounded-lg shadow-md transition-transform hover:scale-105">
-                                        <div className="flex-1 flex items-center justify-center text-3xl sm:text-4xl text-yellow-500">
-                                            {ach.icon}
-                                        </div>
-                                        <p className="text-xs font-semibold leading-tight h-8 shrink-0 flex items-center justify-center">
-                                            {t(ach.nameKey as TranslationKey)}
-                                        </p>
-                                    </div>
-                                </div>
-                            </Tooltip>
-                        ))
-                    ) : (
-                        <p className="col-span-full text-slate-500">{t('dashboard.achievements.none')}</p>
-                    )}
-                </div>
-            </section>
-            
-            {/* Settings/Reset Panel */}
-            <section>
-                <h2 className="text-2xl sm:text-3xl font-bold mb-4">{t('dashboard.settings.title')}</h2>
-                <div className="bg-white dark:bg-slate-800 p-6 rounded-lg shadow-md border border-red-500/30">
-                    <h3 className="text-lg font-bold text-red-600 dark:text-red-400">{t('dashboard.settings.reset.title')}</h3>
-                    <p className="text-slate-600 dark:text-slate-400 mt-2 mb-4">
-                        {t('dashboard.settings.reset.description')}
-                    </p>
-                    <button 
-                        onClick={() => setIsResetModalOpen(true)}
-                        className="bg-red-600 text-white px-4 py-2 rounded-lg font-semibold hover:bg-red-700 transition-colors"
-                    >
-                        {t('dashboard.settings.reset.button')}
-                    </button>
-                </div>
-            </section>
-
-            {isResetModalOpen && (
-                <ResetProgressModal
-                    onClose={() => setIsResetModalOpen(false)}
-                    onConfirm={resetUserData}
-                />
-            )}
-        </div>
-    );
-};
 
 export default Dashboard;
