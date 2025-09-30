@@ -28,7 +28,7 @@ const KanjiCardBack: React.FC<{ kanji: Kanji }> = ({ kanji }) => {
 };
 
 const KanjiView: React.FC = () => {
-    const { userData, updateMastery, addXp } = useUserData();
+    const { userData, updateMultipleMastery, addXp } = useUserData();
     const { t } = useLocalization();
     const [isQuizVisible, setIsQuizVisible] = useState(false);
 
@@ -97,25 +97,15 @@ const KanjiView: React.FC = () => {
 
     const handleQuizComplete = (correctAnswers: string[]) => {
         setIsQuizVisible(false);
-        const answeredQuestions = new Set<string>();
-
-        correctAnswers.forEach(id => {
-            const question = quizQuestions.find(q => q.id === id);
-            if (question && !answeredQuestions.has(question.question)) {
-                updateMastery(masteryKey, question.question, true);
-                answeredQuestions.add(question.question);
-            }
+        
+        const updates = quizQuestions.map(q => {
+            const isCorrect = correctAnswers.includes(q.id);
+            return { key: q.question, correct: isCorrect };
         });
 
-        const incorrectQuestions = quizQuestions.filter(q => !correctAnswers.includes(q.id));
-        incorrectQuestions.forEach(question => {
-             if (!answeredQuestions.has(question.question)) {
-                updateMastery(masteryKey, question.question, false);
-                answeredQuestions.add(question.question);
-            }
-        });
+        updateMultipleMastery(masteryKey, updates);
 
-        if (correctAnswers.length > incorrectQuestions.length) {
+        if (correctAnswers.length > (quizQuestions.length - correctAnswers.length)) {
             addXp(XP_PER_LESSON_COMPLETE);
         }
     };

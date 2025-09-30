@@ -1,7 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { useUserData } from '../hooks/useUserData';
 import { useLocalization } from '../hooks/useLocalization';
-import { AppView } from '../types';
+import { AppView, type MasteryItem } from '../types';
 import { GlobeIcon, UserIcon } from './icons';
 
 interface HeaderProps {
@@ -15,10 +15,11 @@ const Header: React.FC<HeaderProps> = ({ currentView, setView }) => {
   const [isLangDropdownOpen, setIsLangDropdownOpen] = useState(false);
   const langDropdownRef = useRef<HTMLDivElement>(null);
  
+  // FIX: Explicitly type `item` as `MasteryItem` to resolve a TypeScript inference issue where it was being inferred as `unknown`.
   const totalCharactersLearned = 
-    Object.keys(userData?.hiraganaMastery || {}).length +
-    Object.keys(userData?.katakanaMastery || {}).length +
-    Object.keys(userData?.kanjiMastery || {}).length;
+    Object.values(userData?.hiraganaMastery || {}).filter((item: MasteryItem) => item.level > 0).length +
+    Object.values(userData?.katakanaMastery || {}).filter((item: MasteryItem) => item.level > 0).length +
+    Object.values(userData?.kanjiMastery || {}).filter((item: MasteryItem) => item.level > 0).length;
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {

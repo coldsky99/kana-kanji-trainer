@@ -24,7 +24,7 @@ const createInitialUserData = (): UserData => ({
 interface UserDataContextType {
     userData: UserData | null;
     addXp: (amount: number) => Promise<string[]>;
-    updateMastery: (category: keyof Pick<UserData, 'hiraganaMastery' | 'katakanaMastery' | 'kanjiMastery'>, key: string, correct: boolean) => Promise<void>;
+    updateMultipleMastery: (category: keyof Pick<UserData, 'hiraganaMastery' | 'katakanaMastery' | 'kanjiMastery'>, updates: { key: string, correct: boolean }[]) => Promise<void>;
     isLoading: boolean;
     completeOnboarding: () => Promise<void>;
     resetUserData: () => Promise<void>;
@@ -104,29 +104,36 @@ export const UserDataProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         return newAchievements;
     }, [userData, saveUserData]);
 
-    const updateMastery = useCallback(async (category: keyof Pick<UserData, 'hiraganaMastery' | 'katakanaMastery' | 'kanjiMastery'>, key: string, correct: boolean) => {
+    const updateMultipleMastery = useCallback(async (category: keyof Pick<UserData, 'hiraganaMastery' | 'katakanaMastery' | 'kanjiMastery'>, updates: { key: string, correct: boolean }[]) => {
         if (!userData) return;
-        
-        const masteryData = userData[category] as CharacterMastery;
-        const currentItem = masteryData[key] || { level: 0, lastReviewed: null, nextReview: null };
-        
-        if (correct) {
-            currentItem.level = Math.min(currentItem.level + 1, 8);
-        } else {
-            currentItem.level = Math.max(0, currentItem.level - 2);
-        }
 
-        currentItem.lastReviewed = new Date().toISOString();
-        const reviewIntervalHours = SRS_LEVEL_DURATIONS_HOURS[currentItem.level];
-        const nextReviewDate = new Date();
-        nextReviewDate.setHours(nextReviewDate.getHours() + reviewIntervalHours);
-        currentItem.nextReview = nextReviewDate.toISOString();
+        const newMasteryData = { ...(userData[category] as CharacterMastery) };
 
-        const updatedMastery = { ...masteryData, [key]: currentItem };
-        const updatedData = { ...userData, [category]: updatedMastery };
+        updates.forEach(({ key, correct }) => {
+            const currentItem = newMasteryData[key] || { level: 0, lastReviewed: null, nextReview: null };
+            
+            let newLevel;
+            if (correct) {
+                newLevel = Math.min(currentItem.level + 1, 8);
+            } else {
+                newLevel = Math.max(0, currentItem.level - 2);
+            }
+
+            const reviewIntervalHours = SRS_LEVEL_DURATIONS_HOURS[newLevel];
+            const nextReviewDate = new Date();
+            nextReviewDate.setHours(nextReviewDate.getHours() + reviewIntervalHours);
+            
+            newMasteryData[key] = {
+                level: newLevel,
+                lastReviewed: new Date().toISOString(),
+                nextReview: nextReviewDate.toISOString()
+            };
+        });
+
+        const updatedData = { ...userData, [category]: newMasteryData };
+
         setUserData(updatedData);
         saveUserData(updatedData);
-
     }, [userData, saveUserData]);
 
     const completeOnboarding = useCallback(async () => {
@@ -144,7 +151,7 @@ export const UserDataProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         saveUserData(newUserData);
     }, [saveUserData]);
 
-    return React.createElement(UserDataContext.Provider, { value: { userData, addXp, updateMastery, isLoading, completeOnboarding, resetUserData } }, children);
+    return React.createElement(UserDataContext.Provider, { value: { userData, addXp, updateMultipleMastery, isLoading, completeOnboarding, resetUserData } }, children);
 };
 
 export const useUserData = () => {
