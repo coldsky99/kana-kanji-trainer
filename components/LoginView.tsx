@@ -1,13 +1,12 @@
 import React, { useState, type FormEvent } from 'react';
-import { 
-    GoogleAuthProvider, 
-    signInWithPopup,
-    createUserWithEmailAndPassword,
-    signInWithEmailAndPassword,
-    type AuthError
-} from 'firebase/auth';
+// Fix: Use Firebase v9 compat imports to support v8 syntax.
+import firebase from 'firebase/compat/app';
+import 'firebase/compat/auth';
 import { auth } from '../firebase';
 import { useLocalization } from '../hooks/useLocalization';
+
+// Fix: Define AuthError type for v8
+type AuthError = firebase.auth.AuthError;
 
 const LoginView: React.FC = () => {
     const { t } = useLocalization();
@@ -19,11 +18,14 @@ const LoginView: React.FC = () => {
     const [loading, setLoading] = useState(false);
 
     const handleGoogleSignIn = async () => {
-        const provider = new GoogleAuthProvider();
+        // Fix: Use v8 syntax for GoogleAuthProvider
+        const provider = new firebase.auth.GoogleAuthProvider();
         try {
-            await signInWithPopup(auth, provider);
+            // Fix: Use v8 syntax for signInWithPopup
+            await auth.signInWithPopup(provider);
         } catch (error) {
-            console.error("Error during Google sign-in:", error);
+            const authError = error as AuthError;
+            console.error("Error during Google sign-in:", authError.code, authError.message);
         }
     };
     
@@ -49,9 +51,11 @@ const LoginView: React.FC = () => {
                     setError(t('login.error.passwordsDoNotMatch'));
                     return;
                 }
-                await createUserWithEmailAndPassword(auth, email, password);
+                // Fix: Use v8 syntax for createUserWithEmailAndPassword
+                await auth.createUserWithEmailAndPassword(email, password);
             } else { // Login mode
-                await signInWithEmailAndPassword(auth, email, password);
+                // Fix: Use v8 syntax for signInWithEmailAndPassword
+                await auth.signInWithEmailAndPassword(email, password);
             }
         } catch (err) {
             const authError = err as AuthError;
@@ -68,7 +72,7 @@ const LoginView: React.FC = () => {
                     break;
                 default:
                     errorMessage = t('login.error.default');
-                    console.error("Firebase Auth Error:", authError);
+                    console.error("Firebase Auth Error:", authError.code, authError.message);
             }
             setError(errorMessage);
         } finally {

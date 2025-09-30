@@ -1,5 +1,4 @@
 import React, { useState, useEffect } from 'react';
-import { collection, query, orderBy, limit, onSnapshot } from 'firebase/firestore';
 import { db } from '../firebase';
 import type { LeaderboardEntry, UserData } from '../types';
 import { useLocalization } from '../hooks/useLocalization';
@@ -11,10 +10,12 @@ const Leaderboard: React.FC = () => {
     const { t } = useLocalization();
 
     useEffect(() => {
-        const usersRef = collection(db, 'users');
-        const q = query(usersRef, orderBy('xp', 'desc'), limit(10));
+        // Fix: Use v8 syntax for collection and querying
+        const usersRef = db.collection('users');
+        const q = usersRef.orderBy('xp', 'desc').limit(10);
 
-        const unsubscribe = onSnapshot(q, (querySnapshot) => {
+        // Fix: Use v8 syntax for onSnapshot
+        const unsubscribe = q.onSnapshot((querySnapshot) => {
             const leaderboardData: LeaderboardEntry[] = [];
             querySnapshot.forEach((doc, index) => {
                 const data = doc.data() as UserData;

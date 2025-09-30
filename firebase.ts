@@ -1,7 +1,9 @@
-import { initializeApp } from 'firebase/app';
-import { getAuth } from 'firebase/auth';
-import { getFirestore } from 'firebase/firestore';
-import { getAnalytics } from 'firebase/analytics';
+
+// Fix: Use Firebase v9 compat imports to support v8 syntax.
+import firebase from 'firebase/compat/app';
+import 'firebase/compat/auth';
+import 'firebase/compat/firestore';
+import 'firebase/compat/analytics';
 
 // Your web app's Firebase configuration
 const firebaseConfig = {
@@ -15,9 +17,16 @@ const firebaseConfig = {
 };
 
 // Initialize Firebase
-const app = initializeApp(firebaseConfig);
-const analytics = getAnalytics(app);
-const auth = getAuth(app);
-const db = getFirestore(app);
+if (!firebase.apps.length) {
+    firebase.initializeApp(firebaseConfig);
+    try {
+        firebase.analytics();
+    } catch (e) {
+        console.error('Failed to initialize Firebase Analytics', e);
+    }
+}
 
-export { app, auth, db, analytics };
+const auth = firebase.auth();
+const db = firebase.firestore();
+
+export { auth, db };

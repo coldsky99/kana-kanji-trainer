@@ -1,12 +1,12 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
-import { 
-    onAuthStateChanged, 
-    signOut as firebaseSignOut, 
-    setPersistence,
-    browserLocalPersistence,
-    type User 
-} from 'firebase/auth';
+// Fix: Use Firebase v9 compat imports to support v8 syntax.
+import firebase from 'firebase/compat/app';
+import 'firebase/compat/auth';
 import { auth } from '../firebase'; 
+
+// Fix: Define types for Firebase v8
+type User = firebase.User;
+type AuthError = firebase.auth.AuthError;
 
 interface AuthContextType {
     user: User | null;
@@ -23,13 +23,15 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     useEffect(() => {
         console.log("[Auth] Initializing and setting persistence...");
     
-        setPersistence(auth, browserLocalPersistence)
-            .catch((error) => {
-                console.error("[Auth] Error setting persistence:", error);
+        // Fix: Use v8 syntax for setPersistence
+        auth.setPersistence(firebase.auth.Auth.Persistence.LOCAL)
+            .catch((error: AuthError) => {
+                console.error("[Auth] Error setting persistence:", error.code, error.message);
             });
         
         console.log("[Auth] Setting up onAuthStateChanged listener...");
-        const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
+        // Fix: Use v8 syntax for onAuthStateChanged
+        const unsubscribe = auth.onAuthStateChanged((currentUser) => {
             console.log("[Auth] State changed:", currentUser ? currentUser.uid : null);
             setUser(currentUser);
 
@@ -48,9 +50,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
     const signOut = async () => {
         try {
-            await firebaseSignOut(auth);
+            // Fix: Use v8 syntax for signOut
+            await auth.signOut();
         } catch (error) {
-            console.error("Error signing out:", error);
+            const authError = error as AuthError;
+            console.error("Error signing out:", authError.code, authError.message);
         }
     };
 
