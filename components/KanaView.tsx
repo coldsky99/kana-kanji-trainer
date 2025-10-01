@@ -15,7 +15,7 @@ const KanaView: React.FC<KanaViewProps> = ({ kanaType }) => {
     const [isQuizVisible, setIsQuizVisible] = useState(false);
     const [playingChar, setPlayingChar] = useState<string | null>(null);
     const [japaneseVoice, setJapaneseVoice] = useState<SpeechSynthesisVoice | null>(null);
-    const { userData, updateMultipleMastery, addXp } = useUserData();
+    const { userData, updateMasteryAndAddXp } = useUserData();
     const { t } = useLocalization();
     
     const kanaData = kanaType === KanaType.Hiragana ? HIRAGANA_DATA : KATAKANA_DATA;
@@ -126,12 +126,10 @@ const KanaView: React.FC<KanaViewProps> = ({ kanaType }) => {
             const character = q.type === QuizType.KanaToRomaji ? q.question : q.correctAnswer;
             return { key: character, correct: isCorrect };
         });
+        
+        const xpGained = correctAnswers.length > (quizQuestions.length - correctAnswers.length) ? XP_PER_LESSON_COMPLETE : 0;
 
-        updateMultipleMastery(masteryKey, updates);
-
-        if (correctAnswers.length > (quizQuestions.length - correctAnswers.length)) {
-            addXp(XP_PER_LESSON_COMPLETE);
-        }
+        updateMasteryAndAddXp(masteryKey, updates, xpGained);
     };
     
     const getMasteryLevel = (character: string): number => {

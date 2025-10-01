@@ -28,7 +28,7 @@ const KanjiCardBack: React.FC<{ kanji: Kanji }> = ({ kanji }) => {
 };
 
 const KanjiView: React.FC = () => {
-    const { userData, updateMultipleMastery, addXp } = useUserData();
+    const { userData, updateMasteryAndAddXp } = useUserData();
     const { t } = useLocalization();
     const [isQuizVisible, setIsQuizVisible] = useState(false);
 
@@ -103,11 +103,9 @@ const KanjiView: React.FC = () => {
             return { key: q.question, correct: isCorrect };
         });
 
-        updateMultipleMastery(masteryKey, updates);
-
-        if (correctAnswers.length > (quizQuestions.length - correctAnswers.length)) {
-            addXp(XP_PER_LESSON_COMPLETE);
-        }
+        const xpGained = correctAnswers.length > (quizQuestions.length - correctAnswers.length) ? XP_PER_LESSON_COMPLETE : 0;
+        
+        updateMasteryAndAddXp(masteryKey, updates, xpGained);
     };
     
     return (
