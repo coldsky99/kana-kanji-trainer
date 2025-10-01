@@ -25,8 +25,6 @@ const Dashboard: React.FC<DashboardProps> = ({ setView }) => {
 
   const progressPercentage = (userData.xp / XP_PER_LEVEL) * 100;
 
-  const userAchievements = ACHIEVEMENTS.filter(ach => userData.achievements.includes(ach.id));
-
   // FIX: Explicitly type `item` as `MasteryItem` to resolve a TypeScript inference issue where it was being inferred as `unknown`.
   const hiraganaMasteryCount = Object.values(userData.hiraganaMastery).filter((item: MasteryItem) => item.level > 0).length;
   const katakanaMasteryCount = Object.values(userData.katakanaMastery).filter((item: MasteryItem) => item.level > 0).length;
@@ -121,22 +119,36 @@ const Dashboard: React.FC<DashboardProps> = ({ setView }) => {
       {/* Achievements */}
       <div>
         <h2 className="text-2xl font-bold text-slate-800 dark:text-slate-200 mb-4">{t('dashboard.achievements.title')}</h2>
-        {userAchievements.length > 0 ? (
-          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4">
-            {userAchievements.map(ach => (
-              <Tooltip key={ach.id} text={t(ach.descriptionKey as TranslationKey)}>
-                <div className="flex flex-col items-center justify-center p-4 bg-white dark:bg-slate-800 rounded-lg shadow aspect-square text-center border border-slate-200 dark:border-slate-700">
-                  <div className="text-3xl text-yellow-500 mb-2">{ach.icon}</div>
-                  <p className="text-xs font-semibold text-slate-700 dark:text-slate-300">{t(ach.nameKey as TranslationKey)}</p>
+        <div className="bg-white dark:bg-slate-800 shadow-lg rounded-xl p-4 border border-slate-200 dark:border-slate-700">
+          <div className="space-y-3">
+            {ACHIEVEMENTS.map(ach => {
+              const isUnlocked = userData.achievements.includes(ach.id);
+              return (
+                <div 
+                  key={ach.id} 
+                  className={`flex items-center p-3 rounded-lg transition-all duration-300 ${isUnlocked ? 'bg-amber-50 dark:bg-slate-700/80' : 'bg-transparent dark:bg-transparent'}`}
+                >
+                  <div className={`text-3xl mr-4 w-10 text-center ${isUnlocked ? 'text-yellow-500' : 'text-slate-400 dark:text-slate-500'}`}>
+                    {ach.icon}
+                  </div>
+                  <div className="flex-grow">
+                    <h4 className={`font-bold ${isUnlocked ? 'text-slate-800 dark:text-slate-200' : 'text-slate-500 dark:text-slate-400'}`}>
+                      {t(ach.nameKey as TranslationKey)}
+                    </h4>
+                    <p className={`text-sm ${isUnlocked ? 'text-slate-600 dark:text-slate-400' : 'text-slate-400 dark:text-slate-500'}`}>
+                      {t(ach.descriptionKey as TranslationKey)}
+                    </p>
+                  </div>
+                  {isUnlocked && (
+                    <div className="text-green-500 ml-4">
+                      <i className="fa-solid fa-check-circle text-2xl"></i>
+                    </div>
+                  )}
                 </div>
-              </Tooltip>
-            ))}
+              );
+            })}
           </div>
-        ) : (
-          <div className="bg-white dark:bg-slate-800 p-6 rounded-lg text-center border border-dashed border-slate-300 dark:border-slate-700">
-            <p className="text-slate-500 dark:text-slate-400">{t('dashboard.achievements.none')}</p>
-          </div>
-        )}
+        </div>
       </div>
 
       {/* Settings */}

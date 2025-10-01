@@ -156,6 +156,43 @@ export const KANJI_DATA: Kanji[] = [
     { kanji: '院', meaning: 'institution', onyomi: 'イン', kunyomi: '' }
 ];
 
+// Helper function for checking current streak
+const checkStreak = (userData: UserData, requiredStreak: number): boolean => {
+    const datesSet = new Set(userData.dailyProgress.map(d => d.date));
+    if (datesSet.size < requiredStreak) return false;
+
+    let currentDate = new Date();
+    const oneDay = 24 * 60 * 60 * 1000;
+    
+    let streak = 0;
+    
+    const todayStr = currentDate.toISOString().split('T')[0];
+    const yesterdayStr = new Date(currentDate.getTime() - oneDay).toISOString().split('T')[0];
+
+    // Streak must be current, so it must include today or yesterday.
+    if (datesSet.has(todayStr)) {
+        streak = 1;
+    } else if (datesSet.has(yesterdayStr)) {
+        streak = 1;
+        currentDate.setTime(currentDate.getTime() - oneDay); // Start check from yesterday
+    } else {
+        return false; // No current streak
+    }
+
+    // Count backwards from the starting date
+    for (let i = 1; i < datesSet.size + 5; i++) { // Loop a bit more to be safe
+        const prevDay = new Date(currentDate.getTime() - i * oneDay);
+        const prevDayStr = prevDay.toISOString().split('T')[0];
+        if (datesSet.has(prevDayStr)) {
+            streak++;
+        } else {
+            break; // Streak broken
+        }
+    }
+    
+    return streak >= requiredStreak;
+}
+
 
 export const ACHIEVEMENTS: Achievement[] = [
     {
@@ -187,6 +224,13 @@ export const ACHIEVEMENTS: Achievement[] = [
         condition: (userData: UserData) => userData.level >= 5,
     },
     {
+        id: 'level_10',
+        nameKey: 'achievements.level_10.name',
+        descriptionKey: 'achievements.level_10.description',
+        icon: React.createElement(TrophyIcon),
+        condition: (userData: UserData) => userData.level >= 10,
+    },
+    {
         id: 'quick_learner',
         nameKey: 'achievements.quick_learner.name',
         descriptionKey: 'achievements.quick_learner.description',
@@ -198,35 +242,34 @@ export const ACHIEVEMENTS: Achievement[] = [
         nameKey: 'achievements.consistent.name',
         descriptionKey: 'achievements.consistent.description',
         icon: React.createElement(ChartBarIcon),
-        condition: (userData: UserData) => {
-            if (userData.dailyProgress.length < 3) return false;
-            const dates = userData.dailyProgress.map(d => new Date(d.date).getTime()).sort((a, b) => b - a);
-            const today = new Date(new Date().toISOString().split('T')[0]).getTime();
-            const oneDay = 24 * 60 * 60 * 1000;
-            const uniqueDates = [...new Set(dates)];
-            if (uniqueDates.length < 3) return false;
-            const hasTodayOrYesterday = uniqueDates.some(d => d === today || d === today - oneDay);
-            if (!hasTodayOrYesterday) return false;
-            
-            let consecutive = 0;
-            let lastDate = uniqueDates[0];
-            for (let i = 1; i < uniqueDates.length; i++) {
-                if (lastDate - uniqueDates[i] === oneDay) {
-                    consecutive++;
-                } else if (lastDate - uniqueDates[i] > oneDay) {
-                    consecutive = 0;
-                }
-                lastDate = uniqueDates[i];
-                if (consecutive >= 2) return true;
-            }
-            return false;
-        },
+        condition: (userData: UserData) => checkStreak(userData, 3),
+    },
+    {
+        id: 'persistent_learner',
+        nameKey: 'achievements.persistent_learner.name',
+        descriptionKey: 'achievements.persistent_learner.description',
+        icon: React.createElement(ChartBarIcon),
+        condition: (userData: UserData) => checkStreak(userData, 7),
     },
     {
         id: 'hiragana_master',
         nameKey: 'achievements.hiragana_master.name',
         descriptionKey: 'achievements.hiragana_master.description',
         icon: React.createElement(AcademicCapIcon),
-        condition: (userData) => Object.keys(userData.hiraganaMastery).length >= HIRAGANA_DATA.length,
+        condition: (userData) => Object.values(userData.hiraganaMastery).filter(m => m.level > 0).length >= HIRAGANA_DATA.length,
+    },
+    {
+        id: 'katakana_master',
+        nameKey: 'achievements.katakana_master.name',
+        descriptionKey: 'achievements.katakana_master.description',
+        icon: React.createElement(AcademicCapIcon),
+        condition: (userData) => Object.values(userData.katakanaMastery).filter(m => m.level > 0).length >= KATAKANA_DATA.length,
+    },
+    {
+        id: 'kanji_adept',
+        nameKey: 'achievements.kanji_adept.name',
+        descriptionKey: 'achievements.kanji_adept.description',
+        icon: React.createElement(BookOpenIcon),
+        condition: (userData) => Object.values(userData.kanjiMastery).filter(m => m.level > 0).length >= 50,
     }
 ];
